@@ -1,0 +1,12 @@
+{
+  "name": "PaleEngine",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "init": "git submodule init && git submodule update",
+    "init:src": "cd ./PaleGL && npm i"
+  },
+  "author": "",
+  "license": "ISC"
+}
