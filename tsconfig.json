@@ -58,6 +58,7 @@
     "demos",
     "node_modules",
     "dist",
-    "PaleGL/bin/**/*.js"
+    "PaleGL/bin/**/*.js",
+    "PaleGL/pages/**/*",
   ],
 }
