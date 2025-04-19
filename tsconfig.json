@@ -1,0 +1,63 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": false,
+    "module": "ESNext",
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
+    // // write .d.ts files
+    // "rootDir": "./src",
+    // "outDir": "types",
+    // "declaration": true,
+    // "emitDeclarationOnly": true,
+    "importHelpers": true,
+
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "PaleGL/src/*",
+      ],
+    },
+    "types": [
+      "node",
+      "vite/client",
+      "vite-plugin-glsl/ext"
+    ],
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    // "isolatedModules": true,
+    "noEmit": true,
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "preserveConstEnums": false,
+    "moduleSuffixes": [
+      "glsl",
+      "shader",
+      ""
+    ]
+  },
+  "include": [
+    // "PaleGL/src/**/*.ts",
+    "PaleGL/**/*.ts",
+    // "sandbox/**/*.ts",
+    // "pages/**/*.ts",
+    // "vite.config.ts",
+    // "PaleGL/plugins/*.ts",
+    // "PaleGL/node-libs/**/*.ts",
+    "src/**/*.ts",
+  ],
+  "exclude": [
+    "demos",
+    "node_modules",
+    "dist",
+    "PaleGL/bin/**/*.js"
+  ],
+}
