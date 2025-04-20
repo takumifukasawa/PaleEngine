@@ -15,20 +15,17 @@ import { isWin } from './PaleGL/node-libs/env';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 import { createHtmlPlugin } from 'vite-plugin-html';
 import * as path from "node:path";
-// import {importJsonAsStringPlugin} from "./plugins/vite-import-json-as-string.ts";
 
 type EntryPointInfo = { name: string; path: string };
 
 // ---------------------------------------------------
 
-const PALE_GL_ROOT = path.resolve(__dirname, 'PaleGL');
-const SRC_ROOT = path.resolve(__dirname, 'src');
+const PALE_GL_SRC_ROOT = path.resolve(__dirname, 'PaleGL/src');
+const ENTRY_ROOT = path.resolve(__dirname, 'src/pages');
 
 // ビルドするentryを定義
 const ENTRY_POINTS: { [key: string]: string } = {
-    ['sandbox']: 'labs/sandbox',
-    ['street-light']: 'labs/street-light',
-    ['morph-glass']: 'labs/morph-glass',
+    ['']: '',
 };
 
 // rootモードになってるときは pages直下を使用
@@ -84,8 +81,8 @@ export default defineConfig((config) => {
     entryPointInfos.forEach((entryPointInfo) => {
         entryPoints[entryPointInfo.name] =
             isBundle
-                ? path.resolve(path.join(SRC_ROOT, 'pages', entryPointInfo.path, 'main.ts')) // isBundleでjs一個にまとめる場合
-                : path.resolve(path.join(SRC_ROOT, 'pages', entryPointInfo.path, 'index.html')); // html含めてビルドする場合
+                ? path.resolve(path.join(ENTRY_ROOT, entryPointInfo.path, 'main.ts')) // isBundleでjs一個にまとめる場合
+                : path.resolve(path.join(ENTRY_ROOT, entryPointInfo.path, 'index.html')); // html含めてビルドする場合
     });
 
     console.log(`===== [entry_points] =====`);
@@ -116,11 +113,11 @@ export default defineConfig((config) => {
             gltf(),
             glsl({
                 include: [
-                    `${path.join(PALE_GL_ROOT, 'src/**/*.glsl')}`,
-                    `${path.join(SRC_ROOT, 'pages/**/*.glsl')}`,
+                    `${path.join(PALE_GL_SRC_ROOT, '**/*.glsl')}`,
+                    `${path.join(ENTRY_ROOT, '**/*.glsl')}`,
                 ],
                 watch: true,
-                root: 'src/PaleGL',
+                root: './',
                 defaultExtension: 'glsl',
                 warnDuplicatedImports: true,
                 exclude: undefined,
@@ -154,13 +151,13 @@ export default defineConfig((config) => {
             alias: [
                 {
                     find: '@',
-                    replacement: path.join(PALE_GL_ROOT, 'src'),
+                    replacement: PALE_GL_SRC_ROOT,
                 }
             ]
         },
         // assetsInclude: ['**/*.gltf', '**/*.dxt'], // dxt使う場合合った方がいい？
         assetsInclude: ['**/*.gltf'],
-        root: path.join(SRC_ROOT, 'pages'),
+        root: ENTRY_ROOT,
         publicDir: path.resolve(__dirname, 'public'),
         build: {
             reportCompressedSize: false,
