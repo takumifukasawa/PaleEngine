@@ -1,3 +1,5 @@
+// #define LIGHT_CONTROL_TRACK_ENABLED
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -81,6 +83,7 @@ public class Main : MonoBehaviour
                 continue;
             }
 
+#if LIGHT_CONTROL_TRACK_ENABLED
             // light control track
             if (track.GetType() == typeof(LightControlTrack))
             {
@@ -104,6 +107,7 @@ public class Main : MonoBehaviour
                     }
                 }
             }
+#endif
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using System;
+﻿// #define LIGHT_CONTROL_TRACK_ENABLED
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
@@ -287,6 +289,7 @@ namespace UnityJSONExporter
             //
             // light control track
             //
+#if LIGHT_CONTROL_TRACK_ENABLED
             if (track.GetType() == typeof(LightControlTrack))
             {
                 LoggerProxy.Log($"[PlayableDirectorComponentInfo] light control track: {track.name}");
@@ -297,7 +300,8 @@ namespace UnityJSONExporter
                     minifyPropertyName
                 );
             }
-
+#endif
+            
             //
             // control track
             //

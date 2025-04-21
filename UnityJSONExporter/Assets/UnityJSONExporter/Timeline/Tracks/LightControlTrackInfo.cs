@@ -1,9 +1,12 @@
-﻿using System;
+﻿// #define LIGHT_CONTROL_TRACK_ENABLED
+
+using System;
 using UnityEditor;
 using UnityEngine.Timeline;
 
 namespace UnityJSONExporter
 {
+#if LIGHT_CONTROL_TRACK_ENABLED
     public class LightControlTrackInfo : ClipTrackInfoBase
     {
         public LightControlTrackInfo(
@@ -73,4 +76,5 @@ namespace UnityJSONExporter
             return lightControlClipInfo;
         }
     }
+#endif
 }
