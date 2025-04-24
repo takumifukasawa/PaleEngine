@@ -121,6 +121,7 @@ export default defineConfig((config) => {
                 defaultExtension: 'glsl',
                 warnDuplicatedImports: true,
                 exclude: undefined,
+                minify: true
             }),
             transformGlslLayout(),
             shaderMinifierPlugin({
@@ -141,7 +142,7 @@ export default defineConfig((config) => {
                     ],
                 },
             }),
-            // importJsonAsStringPlugin(),
+            // roundFloatPlugin(),
             visualizer({
                 template: 'treemap',
             }),
