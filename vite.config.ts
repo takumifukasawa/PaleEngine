@@ -22,6 +22,7 @@ type EntryPointInfo = { name: string; path: string };
 
 const PALE_GL_SRC_ROOT = path.resolve(__dirname, 'PaleGL/src');
 const ENTRY_ROOT = path.resolve(__dirname, 'src/pages');
+const PUBLIC_ROOT = path.resolve(__dirname, 'src/public');
 
 // ビルドするentryを定義
 const ENTRY_POINTS: { [key: string]: string } = {
@@ -159,7 +160,7 @@ export default defineConfig((config) => {
         // assetsInclude: ['**/*.gltf', '**/*.dxt'], // dxt使う場合合った方がいい？
         assetsInclude: ['**/*.gltf'],
         root: ENTRY_ROOT,
-        publicDir: path.resolve(__dirname, 'public'),
+        publicDir: PUBLIC_ROOT,
         build: {
             reportCompressedSize: false,
             cssCodeSplit: false,

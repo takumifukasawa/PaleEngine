@@ -1,6 +1,6 @@
 import { setOnBeforeStartEngine } from '@/PaleGL/core/engine';
 import { findActorByName } from '@/PaleGL/core/scene.ts';
-import { createColorBlack } from '@/PaleGL/math/color.ts';
+import { createColor, createColorBlack } from '@/PaleGL/math/color.ts';
 import { createBufferVisualizerPass } from '@/PaleGL/postprocess/bufferVisualizerPass.ts';
 import { initDebugger } from '@/PaleGL/utilities/initDebugger.ts';
 import sceneJsonUrl from './data/scene.json?raw';
@@ -10,9 +10,15 @@ import { setOrthoSize } from '@/PaleGL/actors/cameras/orthographicCameraBehaviou
 import { DirectionalLight } from '@/PaleGL/actors/lights/directionalLight.ts';
 import { OrthographicCamera } from '@/PaleGL/actors/cameras/orthographicCamera.ts';
 import { createRenderTarget } from '@/PaleGL/core/renderTarget.ts';
-import { RenderTargetTypes, TextureDepthPrecisionType } from '@/PaleGL/constants.ts';
+import {
+    FragmentShaderModifierPragmas,
+    RenderTargetTypes,
+    TextureDepthPrecisionType,
+    UniformBlockNames,
+    UniformTypes,
+} from '@/PaleGL/constants.ts';
 import { createArrowHelper } from '@/PaleGL/actors/meshes/arrowHelper.ts';
-import { addChildActor } from '@/PaleGL/actors/actor.ts';
+import { addActorComponents, addChildActor } from '@/PaleGL/actors/actor.ts';
 import soundVertexShader from './shaders/sound-vertex.glsl';
 import {
     createStartupLayer,
@@ -25,6 +31,11 @@ import { createPlayer, loadPlayer, resizePlayer, runPlayer, startPlayer } from '
 import { createGPU } from '@/PaleGL/core/gpu.ts';
 import { createGLSLSoundWrapper, loadSound } from '@/PaleGL/utilities/createGLSLSoundWrapper.ts';
 import { isDevelopment } from '@/PaleGL/utilities/envUtilities.ts';
+import { createUnlitMaterial } from '@/PaleGL/materials/unlitMaterial.ts';
+import { Mesh } from '@/PaleGL/actors/meshes/mesh.ts';
+import { setMeshMaterial } from '@/PaleGL/actors/meshes/meshBehaviours.ts';
+import { createComponent } from '@/PaleGL/components/component.ts';
+import { createTimelineMaterialPropertyBinderController } from '@/PaleGL/components/timelinePropertyBindreController.ts';
 
 //--------------------
 
@@ -87,7 +98,17 @@ const pixelRatio = Math.min(window.devicePixelRatio, 1.5);
 
 const glslSoundWrapper = createGLSLSoundWrapper(gpu, soundVertexShader, SOUND_DURATION);
 
-const player = createPlayer(gpu, canvasElement, pixelRatio, sceneJsonUrl, SOUND_DURATION, { glslSoundWrapper });
+const hotSceneJsonUrl = `assets/data/scene-hot-reload.json`;
+console.log(hotSceneJsonUrl);
+const player = createPlayer(
+    gpu,
+    canvasElement,
+    pixelRatio,
+    sceneJsonUrl,
+    hotSceneJsonUrl,
+    SOUND_DURATION,
+    { glslSoundWrapper }
+);
 
 // TODO: player.engine側に移譲したい
 const onWindowResize = () => {
@@ -117,6 +138,8 @@ const load = async () => {
             // onWindowResize();
             setStartupLayerLoadingPercentile(startupLayer, 50);
             await wait(100);
+
+            init();
         },
         async () => {
             await wait(100);
@@ -142,6 +165,56 @@ const init = () => {
     // TODO: set post process いらないかも
     // const player.sceneCamera = findActorByName(player.scene.children, 'MainCamera') as Camera;
     setCameraPostProcess(player.camera!, cameraPostProcess);
+
+    const backgroundPlane = findActorByName(player.scene.children, 'Background')! as Mesh;
+    setMeshMaterial(
+        backgroundPlane,
+        createUnlitMaterial({
+            name: 'backgroundPlane',
+            baseColor: createColor(1, 1, 0, 1),
+            fragmentShaderModifiers: [
+                {
+                    pragma: FragmentShaderModifierPragmas.APPEND_INCLUDE,
+                    value: `
+#include <rand>
+#include <perlin>
+                    `,
+                },
+                {
+                    pragma: FragmentShaderModifierPragmas.APPEND_UNIFORMS,
+                    value: `
+uniform vec4 uPrimaryColor;
+                    `,
+                },
+                {
+                    pragma: FragmentShaderModifierPragmas.AFTER_OUT,
+                    value: `
+float t = uTimelineTime;
+// float t = uTime;
+uv = vWorldPosition.xy * .55;
+float gridCount = 12.;
+uv += vec2(.1, .1) * t;
+float localX = fract(uv.x * gridCount);
+float perlin1 = perlinNoise(uv + vec2(localX + t * .6, t * .2), 1.);
+float perlin2 = perlinNoise(uv + vec2(localX + perlin1 + t * .2, 0.), 1.);
+vec3 color = vec3(perlin2) * uPrimaryColor.xyz;
+outGBufferD = vec4(color, 1.);
+// outGBufferD = vec4(vec3(localX1), 1.);
+// outGBufferD = vec4(vec3(uTimelineTime * .1), 1.);
+`,
+                },
+            ],
+            uniformBlockNames: [UniformBlockNames.Timeline],
+            uniforms: [
+                {
+                    name: 'uPrimaryColor',
+                    type: UniformTypes.Color,
+                    value: createColor(1, 1, 0, 1),
+                },
+            ],
+        })
+    );
+    addActorComponents(backgroundPlane, [createTimelineMaterialPropertyBinderController('uPrimaryColor', 'pc')]);
 
     const directionalLight = findActorByName(player.scene.children, 'DirectionalLight') as DirectionalLight;
     // shadows
@@ -216,7 +289,6 @@ const init = () => {
 
 const main = async () => {
     await load();
-    init();
 };
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
