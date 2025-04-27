@@ -34,7 +34,6 @@ import { isDevelopment } from '@/PaleGL/utilities/envUtilities.ts';
 import { createUnlitMaterial } from '@/PaleGL/materials/unlitMaterial.ts';
 import { Mesh } from '@/PaleGL/actors/meshes/mesh.ts';
 import { setMeshMaterial } from '@/PaleGL/actors/meshes/meshBehaviours.ts';
-import { createComponent } from '@/PaleGL/components/component.ts';
 import { createTimelineMaterialPropertyBinderController } from '@/PaleGL/components/timelinePropertyBindreController.ts';
 
 //--------------------
@@ -99,15 +98,17 @@ const pixelRatio = Math.min(window.devicePixelRatio, 1.5);
 const glslSoundWrapper = createGLSLSoundWrapper(gpu, soundVertexShader, SOUND_DURATION);
 
 const hotSceneJsonUrl = `assets/data/scene-hot-reload.json`;
-console.log(hotSceneJsonUrl);
 const player = createPlayer(
     gpu,
     canvasElement,
     pixelRatio,
     sceneJsonUrl,
     hotSceneJsonUrl,
-    SOUND_DURATION,
-    { glslSoundWrapper }
+    {
+        // timelineDuration: SOUND_DURATION,
+        // glslSoundWrapper, // 今回は一旦使わない
+        loop: true
+    }
 );
 
 // TODO: player.engine側に移譲したい
