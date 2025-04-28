@@ -28,10 +28,6 @@ dist-ssr
 
 ###
 
-libs/*
-!libs/.gitignore
-
-/packer
 /tmp
 /fonts
 
