@@ -22,9 +22,8 @@ import { addActorComponents, addChildActor } from '@/PaleGL/actors/actor.ts';
 import soundVertexShader from './shaders/sound-vertex.glsl';
 import {
     createStartupLayer,
-    hideStartupLayerLoading,
+    hideStartupLayerWrapper,
     setStartupLayerLoadingPercentile,
-    showStartupLayerMenu,
 } from '@/Player/createStartupLayer.ts';
 import { wait } from '@/PaleGL/utilities/wait.ts';
 import { createPlayer, loadPlayer, resizePlayer, runPlayer, startPlayer } from '@/Player/player.ts';
@@ -35,6 +34,8 @@ import { createUnlitMaterial } from '@/PaleGL/materials/unlitMaterial.ts';
 import { Mesh } from '@/PaleGL/actors/meshes/mesh.ts';
 import { setMeshMaterial } from '@/PaleGL/actors/meshes/meshBehaviours.ts';
 import { createTimelineMaterialPropertyBinderController } from '@/PaleGL/components/timelinePropertyBindreController.ts';
+import { createGBufferMaterial } from '@/PaleGL/materials/gBufferMaterial.ts';
+import { SharedTexturesTypes } from '@/PaleGL/core/createSharedTextures.ts';
 
 //--------------------
 
@@ -98,18 +99,11 @@ const pixelRatio = Math.min(window.devicePixelRatio, 1.5);
 const glslSoundWrapper = createGLSLSoundWrapper(gpu, soundVertexShader, SOUND_DURATION);
 
 const hotSceneJsonUrl = `assets/data/scene-hot-reload.json`;
-const player = createPlayer(
-    gpu,
-    canvasElement,
-    pixelRatio,
-    sceneJsonUrl,
-    hotSceneJsonUrl,
-    {
-        // timelineDuration: SOUND_DURATION,
-        // glslSoundWrapper, // 今回は一旦使わない
-        loop: true
-    }
-);
+const player = createPlayer(gpu, canvasElement, pixelRatio, sceneJsonUrl, hotSceneJsonUrl, {
+    // timelineDuration: SOUND_DURATION,
+    // glslSoundWrapper, // 今回は一旦使わない
+    loop: true,
+});
 
 // TODO: player.engine側に移譲したい
 const onWindowResize = () => {
@@ -124,9 +118,13 @@ const load = async () => {
         requestAnimationFrame(tick);
     };
 
-    const startupLayer = createStartupLayer(() => {
+    const onStartPlayer = () => {
         startPlayer(player);
         requestAnimationFrame(tick);
+    };
+
+    const startupLayer = createStartupLayer(() => {
+        onStartPlayer();
     });
     wrapperElement.appendChild(startupLayer.rootElement);
 
@@ -144,13 +142,13 @@ const load = async () => {
         },
         async () => {
             await wait(100);
-            setStartupLayerLoadingPercentile(startupLayer, 100);
-            hideStartupLayerLoading(startupLayer);
-            showStartupLayerMenu(startupLayer);
+            // keep startup layer
+            // setStartupLayerLoadingPercentile(startupLayer, 100);
+            // hideStartupLayerLoading(startupLayer);
+            // showStartupLayerMenu(startupLayer);
             // immediately start
-            // startupLayer.hideStartupWrapper()
-            // startPlayer(player);
-            // requestAnimationFrame(tick)
+            hideStartupLayerWrapper(startupLayer);
+            onStartPlayer();
         }
     );
 };
@@ -163,9 +161,17 @@ const init = () => {
     addPostProcessPass(cameraPostProcess, bufferVisualizerPass);
 
     setPostProcessEnabled(cameraPostProcess, true);
-    // TODO: set post process いらないかも
-    // const player.sceneCamera = findActorByName(player.scene.children, 'MainCamera') as Camera;
     setCameraPostProcess(player.camera!, cameraPostProcess);
+
+    const cubeMesh = findActorByName(player.scene.children, 'Cube') as Mesh;
+    setMeshMaterial(
+        cubeMesh,
+        createGBufferMaterial({
+            metallic: 0,
+            roughness: 0,
+            emissiveColor: createColor(1.5, 1.5, 1.5),
+        })
+    );
 
     const backgroundPlane = findActorByName(player.scene.children, 'Background')! as Mesh;
     setMeshMaterial(
@@ -175,33 +181,39 @@ const init = () => {
             baseColor: createColor(1, 1, 0, 1),
             fragmentShaderModifiers: [
                 {
-                    pragma: FragmentShaderModifierPragmas.APPEND_INCLUDE,
-                    value: `
-#include <rand>
-#include <perlin>
-                    `,
-                },
-                {
                     pragma: FragmentShaderModifierPragmas.APPEND_UNIFORMS,
                     value: `
 uniform vec4 uPrimaryColor;
+uniform sampler2D uRandomNoiseMap;
+uniform sampler2D uPerlinNoiseMap;
                     `,
                 },
                 {
                     pragma: FragmentShaderModifierPragmas.AFTER_OUT,
                     value: `
-float t = uTimelineTime;
-// float t = uTime;
+// float t = uTimelineTime;
+float t = uTime;
 uv = vWorldPosition.xy * .55;
-float gridCount = 12.;
-uv += vec2(.1, .1) * t;
+// grid offset
+float gridCount = 10. + sin(uv.x * .8 + t * .3) * 3.;
 float localX = fract(uv.x * gridCount);
-float perlin1 = perlinNoise(uv + vec2(localX + t * .6, t * .2), 1.);
-float perlin2 = perlinNoise(uv + vec2(localX + perlin1 + t * .2, 0.), 1.);
-vec3 color = vec3(perlin2) * uPrimaryColor.xyz;
+// wave pattern
+float perlinSrc = texture(uPerlinNoiseMap, uv * vec2(.15, .15) + vec2(t * .1, t * .05)).x;
+vec2 offset = vec2(localX + t * .8, t * .4) * vec2(.1, .04);
+float perlin = texture(uPerlinNoiseMap, uv * vec2(.15 + perlinSrc * .1, .15 + perlinSrc * .1) + offset).x;
+// dot pattern
+vec2 cellUv = fract(uv * 50.);
+float circle = 1. - smoothstep(.2, .5, length(cellUv - .5));
+// rand dither 
+float randomX = texture(uRandomNoiseMap, vWorldPosition.xy * .1 + vec2(t, -t)).x;
+float randomY = texture(uRandomNoiseMap, vWorldPosition.xy * .1 + vec2(t, t)).x;
+float random = texture(uRandomNoiseMap, vWorldPosition.xy * .2 + vec2(randomX, randomY)).x;
+float dither = .5 + random * .5 * (1. - perlin);
+// composite
+float pattern = circle * perlin * 3. + circle * .05;
+vec3 color = vec3(pattern) * uPrimaryColor.xyz;
+color *= dither;
 outGBufferD = vec4(color, 1.);
-// outGBufferD = vec4(vec3(localX1), 1.);
-// outGBufferD = vec4(vec3(uTimelineTime * .1), 1.);
 `,
                 },
             ],
@@ -211,6 +223,16 @@ outGBufferD = vec4(color, 1.);
                     name: 'uPrimaryColor',
                     type: UniformTypes.Color,
                     value: createColor(1, 1, 0, 1),
+                },
+                {
+                    name: 'uPerlinNoiseMap',
+                    type: UniformTypes.Texture,
+                    value: player.engine.sharedTextures.get(SharedTexturesTypes.PERLIN_NOISE)!.texture,
+                },
+                {
+                    name: 'uRandomNoiseMap',
+                    type: UniformTypes.Texture,
+                    value: player.engine.sharedTextures.get(SharedTexturesTypes.RANDOM_NOISE)!.texture,
                 },
             ],
         })
