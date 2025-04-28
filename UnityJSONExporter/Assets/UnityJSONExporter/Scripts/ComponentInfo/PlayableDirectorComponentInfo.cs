@@ -30,7 +30,7 @@ namespace UnityJSONExporter
         {
             var asset = playableDirector.playableAsset;
 
-            // LoggerProxy.Log($"[PlayableDirectorComponentInfo] duration: {playableDirector.duration}");
+            LoggerProxy.Log($"[PlayableDirectorComponentInfo] duration: {playableDirector.duration}");
 
             Duration = asset.duration;
             Name = asset.name;
