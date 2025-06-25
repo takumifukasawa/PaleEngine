@@ -21,9 +21,9 @@ import { createArrowHelper } from '@/PaleGL/actors/meshes/arrowHelper.ts';
 import { addActorComponents, addChildActor } from '@/PaleGL/actors/actor.ts';
 import soundVertexShader from './shaders/sound-vertex.glsl';
 import {
-    createStartupLayer,
+    createStartupLayer, hideStartupLayerLoading,
     hideStartupLayerWrapper,
-    setStartupLayerLoadingPercentile,
+    setStartupLayerLoadingPercentile, showStartupLayerMenu,
 } from '@/Player/createStartupLayer.ts';
 import { wait } from '@/PaleGL/utilities/wait.ts';
 import { createPlayer, loadPlayer, resizePlayer, runPlayer, startPlayer } from '@/Player/player.ts';
@@ -100,8 +100,8 @@ const glslSoundWrapper = createGLSLSoundWrapper(gpu, soundVertexShader, SOUND_DU
 
 const hotSceneJsonUrl = `assets/data/scene-hot-reload.json`;
 const player = createPlayer(gpu, canvasElement, pixelRatio, sceneJsonUrl, hotSceneJsonUrl, {
-    // timelineDuration: SOUND_DURATION,
-    // glslSoundWrapper, // 今回は一旦使わない
+    timelineDuration: SOUND_DURATION,
+    glslSoundWrapper, // 今回は一旦使わない
     loop: true,
 });
 
@@ -143,12 +143,13 @@ const load = async () => {
         async () => {
             await wait(100);
             // keep startup layer
-            // setStartupLayerLoadingPercentile(startupLayer, 100);
-            // hideStartupLayerLoading(startupLayer);
-            // showStartupLayerMenu(startupLayer);
+            // chromeだとこうしないと音が出ない
+            setStartupLayerLoadingPercentile(startupLayer, 100);
+            hideStartupLayerLoading(startupLayer);
+            showStartupLayerMenu(startupLayer);
             // immediately start
-            hideStartupLayerWrapper(startupLayer);
-            onStartPlayer();
+            // hideStartupLayerWrapper(startupLayer);
+            // onStartPlayer();
         }
     );
 };
