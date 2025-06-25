@@ -1,15 +1,12 @@
-import { setOnBeforeStartEngine } from '@/PaleGL/core/engine';
-import { findActorByName } from '@/PaleGL/core/scene.ts';
-import { createColor, createColorBlack } from '@/PaleGL/math/color.ts';
-import { createBufferVisualizerPass } from '@/PaleGL/postprocess/bufferVisualizerPass.ts';
-import { initDebugger } from '@/PaleGL/utilities/initDebugger.ts';
-import sceneJsonUrl from './data/scene.json?raw';
-import { addPostProcessPass, createPostProcess, setPostProcessEnabled } from '@/PaleGL/postprocess/postProcess.ts';
+import { addActorComponents, addChildActor } from '@/PaleGL/actors/actor.ts';
 import { setCameraPostProcess } from '@/PaleGL/actors/cameras/cameraBehaviours.ts';
+import { OrthographicCamera } from '@/PaleGL/actors/cameras/orthographicCamera.ts';
 import { setOrthoSize } from '@/PaleGL/actors/cameras/orthographicCameraBehaviour.ts';
 import { DirectionalLight } from '@/PaleGL/actors/lights/directionalLight.ts';
-import { OrthographicCamera } from '@/PaleGL/actors/cameras/orthographicCamera.ts';
-import { createRenderTarget } from '@/PaleGL/core/renderTarget.ts';
+import { createArrowHelper } from '@/PaleGL/actors/meshes/arrowHelper.ts';
+import { Mesh } from '@/PaleGL/actors/meshes/mesh.ts';
+import { setMeshMaterial } from '@/PaleGL/actors/meshes/meshBehaviours.ts';
+import { createTimelineMaterialPropertyBinderController } from '@/PaleGL/components/timelinePropertyBindreController.ts';
 import {
     FragmentShaderModifierPragmas,
     RenderTargetTypes,
@@ -17,25 +14,29 @@ import {
     UniformBlockNames,
     UniformTypes,
 } from '@/PaleGL/constants.ts';
-import { createArrowHelper } from '@/PaleGL/actors/meshes/arrowHelper.ts';
-import { addActorComponents, addChildActor } from '@/PaleGL/actors/actor.ts';
-import soundVertexShader from './shaders/sound-vertex.glsl';
-import {
-    createStartupLayer, hideStartupLayerLoading,
-    hideStartupLayerWrapper,
-    setStartupLayerLoadingPercentile, showStartupLayerMenu,
-} from '@/Player/createStartupLayer.ts';
-import { wait } from '@/PaleGL/utilities/wait.ts';
-import { createPlayer, loadPlayer, resizePlayer, runPlayer, startPlayer } from '@/Player/player.ts';
+import { SharedTexturesTypes } from '@/PaleGL/core/createSharedTextures.ts';
+import { setOnBeforeStartEngine } from '@/PaleGL/core/engine';
 import { createGPU } from '@/PaleGL/core/gpu.ts';
+import { createRenderTarget } from '@/PaleGL/core/renderTarget.ts';
+import { findActorByName } from '@/PaleGL/core/scene.ts';
+import { createGBufferMaterial } from '@/PaleGL/materials/gBufferMaterial.ts';
+import { createUnlitMaterial } from '@/PaleGL/materials/unlitMaterial.ts';
+import { createColor, createColorBlack } from '@/PaleGL/math/color.ts';
+import { createBufferVisualizerPass } from '@/PaleGL/postprocess/bufferVisualizerPass.ts';
+import { addPostProcessPass, createPostProcess, setPostProcessEnabled } from '@/PaleGL/postprocess/postProcess.ts';
 import { createGLSLSoundWrapper, loadSound } from '@/PaleGL/utilities/createGLSLSoundWrapper.ts';
 import { isDevelopment } from '@/PaleGL/utilities/envUtilities.ts';
-import { createUnlitMaterial } from '@/PaleGL/materials/unlitMaterial.ts';
-import { Mesh } from '@/PaleGL/actors/meshes/mesh.ts';
-import { setMeshMaterial } from '@/PaleGL/actors/meshes/meshBehaviours.ts';
-import { createTimelineMaterialPropertyBinderController } from '@/PaleGL/components/timelinePropertyBindreController.ts';
-import { createGBufferMaterial } from '@/PaleGL/materials/gBufferMaterial.ts';
-import { SharedTexturesTypes } from '@/PaleGL/core/createSharedTextures.ts';
+import { initDebugger } from '@/PaleGL/utilities/initDebugger.ts';
+import { wait } from '@/PaleGL/utilities/wait.ts';
+import {
+    createStartupLayer,
+    hideStartupLayerLoading,
+    setStartupLayerLoadingPercentile,
+    showStartupLayerMenu,
+} from '@/Player/createStartupLayer.ts';
+import { createPlayer, loadPlayer, resizePlayer, runPlayer, startPlayer } from '@/Player/player.ts';
+import sceneJsonUrl from './data/scene.json?raw';
+import soundVertexShader from './shaders/sound-vertex.glsl';
 
 //--------------------
 
