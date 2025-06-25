@@ -2,19 +2,19 @@ import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig, loadEnv } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 // @ts-ignore
-import gltf from 'vite-plugin-gltf';
-import glsl from 'vite-plugin-glsl';
-import checker from 'vite-plugin-checker';
 import eslint from '@nabla/vite-plugin-eslint';
+import * as path from 'node:path';
 import * as process from 'process';
-import { transformGlslLayout } from './PaleGL/plugins/vite-transform-glsl-layout-plugin';
-import string from 'vite-plugin-string';
-import { shaderMinifierPlugin } from './PaleGL/plugins/vite-shader-minifier-plugin';
-import { deleteTmpCachesPlugin } from './PaleGL/plugins/vite-delete-tmp-caches-plugin';
-import { isWin } from './PaleGL/node-libs/env';
-import { viteSingleFile } from 'vite-plugin-singlefile';
+import checker from 'vite-plugin-checker';
+import glsl from 'vite-plugin-glsl';
+import gltf from 'vite-plugin-gltf';
 import { createHtmlPlugin } from 'vite-plugin-html';
-import * as path from "node:path";
+import { viteSingleFile } from 'vite-plugin-singlefile';
+import string from 'vite-plugin-string';
+import { isWin } from './PaleGL/node-libs/env';
+import { deleteTmpCachesPlugin } from './PaleGL/plugins/vite-delete-tmp-caches-plugin';
+import { shaderMinifierPlugin } from './PaleGL/plugins/vite-shader-minifier-plugin';
+import { transformGlslLayout } from './PaleGL/plugins/vite-transform-glsl-layout-plugin';
 
 type EntryPointInfo = { name: string; path: string };
 
@@ -80,10 +80,9 @@ export default defineConfig((config) => {
 
     const entryPoints: { [key: string]: string } = {};
     entryPointInfos.forEach((entryPointInfo) => {
-        entryPoints[entryPointInfo.name] =
-            isBundle
-                ? path.resolve(path.join(ENTRY_ROOT, entryPointInfo.path, 'main.ts')) // isBundleでjs一個にまとめる場合
-                : path.resolve(path.join(ENTRY_ROOT, entryPointInfo.path, 'index.html')); // html含めてビルドする場合
+        entryPoints[entryPointInfo.name] = isBundle
+            ? path.resolve(path.join(ENTRY_ROOT, entryPointInfo.path, 'main.ts')) // isBundleでjs一個にまとめる場合
+            : path.resolve(path.join(ENTRY_ROOT, entryPointInfo.path, 'index.html')); // html含めてビルドする場合
     });
 
     console.log(`===== [entry_points] =====`);
@@ -113,16 +112,13 @@ export default defineConfig((config) => {
             }),
             gltf(),
             glsl({
-                include: [
-                    `${path.join(PALE_GL_SRC_ROOT, '**/*.glsl')}`,
-                    `${path.join(ENTRY_ROOT, '**/*.glsl')}`,
-                ],
+                include: [`${path.join(PALE_GL_SRC_ROOT, '**/*.glsl')}`, `${path.join(ENTRY_ROOT, '**/*.glsl')}`],
                 watch: true,
                 root: './',
                 defaultExtension: 'glsl',
                 warnDuplicatedImports: true,
                 exclude: undefined,
-                minify: true
+                minify: true,
             }),
             transformGlslLayout(),
             shaderMinifierPlugin({
@@ -154,8 +150,8 @@ export default defineConfig((config) => {
                 {
                     find: '@',
                     replacement: PALE_GL_SRC_ROOT,
-                }
-            ]
+                },
+            ],
         },
         // assetsInclude: ['**/*.gltf', '**/*.dxt'], // dxt使う場合合った方がいい？
         assetsInclude: ['**/*.gltf'],
@@ -173,34 +169,44 @@ export default defineConfig((config) => {
                 output: {
                     inlineDynamicImports: false,
                     entryFileNames: (chunk) => {
-                        console.log("entryFileNames", isRoot)
+                        console.log('entryFileNames', isRoot);
                         return isRoot ? `assets/main.js` : `${chunk.name}/assets/main.js`;
                     },
                     assetFileNames: () => {
-                        console.log("assetFileNames", isRoot)
+                        console.log('assetFileNames', isRoot);
                         return isRoot ? `assets/[name].[ext]` : `assets/[name].[ext]`;
                     },
                     chunkFileNames: () => {
-                        console.log("chunkFileNames", isRoot)
+                        console.log('chunkFileNames', isRoot);
                         return isRoot ? `assets/chunk-[hash].js` : `assets/chunk-[hash].js`;
                     },
                 },
+                plugins: [
+                    visualizer({
+                        // open: true, // ビルド後にブラウザで自動オープン
+                        filename: 'stats.html', // 出力ファイル名
+                        gzipSize: true,
+                        brotliSize: true,
+                    }),
+                ],
             },
             minify: 'terser',
             target: 'esnext',
             terserOptions: {
                 mangle: {
                     toplevel: true,
-                    ...(isMangle ? {
-                        // 関数ベースにする場合
-                        properties: {
-                            keep_quoted: true,
-                        }
-                        // class使う場合
-                        // properties: {
-                        //     regex: /^(_|\$)/,
-                        // },
-                    } : {}),
+                    ...(isMangle
+                        ? {
+                              // 関数ベースにする場合
+                              properties: {
+                                  keep_quoted: true,
+                              },
+                              // class使う場合
+                              // properties: {
+                              //     regex: /^(_|\$)/,
+                              // },
+                          }
+                        : {}),
                 },
                 compress: {
                     passes: 1,
