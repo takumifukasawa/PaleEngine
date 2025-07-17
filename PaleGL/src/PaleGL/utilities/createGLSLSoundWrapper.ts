@@ -7,6 +7,7 @@ import {
     setGLSLSoundVolume, stopGLSLSound
 } from '@/PaleGL/core/glslSound.ts';
 import { Gpu } from '@/PaleGL/core/gpu.ts';
+import { parseShaderError, formatShaderError } from '@/PaleGL/utilities/shaderErrorParser.ts';
 
 export type GLSLSoundWrapper = {
     glslSound: GLSLSound;
@@ -94,6 +95,51 @@ export function stopSound(glslSoundWrapper: GLSLSoundWrapper) {
     console.log('[glslSoundWrapper.stop]');
     glslSoundWrapper.isPlaying = false;
     stopGLSLSound(glslSoundWrapper.glslSound);
+}
+
+export function resetSoundPosition(glslSoundWrapper: GLSLSoundWrapper) {
+    console.log('[glslSoundWrapper.resetPosition]');
+    glslSoundWrapper.glslSound.currentTime = 0;
+    glslSoundWrapper.glslSound.startTime = 0;
+    glslSoundWrapper.glslSound.offsetTime = 0;
+}
+
+export function updateShader(glslSoundWrapper: GLSLSoundWrapper, newShader: string): { success: boolean; error?: string } {
+    try {
+        console.log('[glslSoundWrapper.updateShader] Updating shader...');
+        
+        // 現在再生中の場合は停止
+        const wasPlaying = glslSoundWrapper.isPlaying;
+        if (wasPlaying) {
+            stopSound(glslSoundWrapper);
+        }
+        
+        // 新しいシェーダーでGLSLSoundを再作成
+        const newGlslSound = createGLSLSound(glslSoundWrapper.glslSound.gpu, newShader, glslSoundWrapper.glslSound.duration);
+        
+        // 音源データを再生成
+        loadGLSLSound(newGlslSound);
+        
+        // 古いGLSLSoundを新しいものに置き換え
+        glslSoundWrapper.glslSound = newGlslSound;
+        glslSoundWrapper.isPlaying = false;
+        
+        console.log('[glslSoundWrapper.updateShader] Shader updated successfully');
+        return { success: true };
+        
+    } catch (error) {
+        console.error('[glslSoundWrapper.updateShader] Error updating shader:', error);
+        
+        // エラーメッセージを解析してフォーマット
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        const parsedError = parseShaderError(errorMessage);
+        const formattedError = formatShaderError(parsedError);
+        
+        return { 
+            success: false, 
+            error: formattedError
+        };
+    }
 }
 
 export function getSoundCurrentTime(glslSoundWrapper: GLSLSoundWrapper) {

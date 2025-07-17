@@ -173,15 +173,13 @@ export function createShader({ gpu, vertexShader, fragmentShader, transformFeedb
     // program link to gl context
     gl.linkProgram(program);
 
-    // for debug
-    // console.log(vertexShader)
-    // console.log(fragmentShader)
-
-    // check program info log
-    const programInfo = gl.getProgramInfoLog(program);
-    if (!!programInfo && programInfo.length > 0) {
-        console.error('program error: ', vertexShader, fragmentShader);
-        console.error(programInfo);
+    // check link status
+    const linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+    if (!linked) {
+        const programInfo = gl.getProgramInfoLog(program);
+        console.error('program link error: ', programInfo);
+        gl.deleteProgram(program);
+        throw new Error(`Program link failed: ${programInfo || 'Unknown link error'}`);
     }
 
     return {
@@ -193,18 +191,23 @@ export function createShader({ gpu, vertexShader, fragmentShader, transformFeedb
 function createRawShader(gl: WebGL2RenderingContext, type: number, src: string) {
     // create vertex shader
     const shader = gl.createShader(type)!;
-    // if (!shader) {
-    //     console.error('invalid shader');
-    //     return;
-    // }
+    if (!shader) {
+        throw new Error('Failed to create shader');
+    }
+    
     // set shader source (string)
     gl.shaderSource(shader, src);
     // compile shader
     gl.compileShader(shader);
-    // check shader info log
-    const info = gl.getShaderInfoLog(shader);
-    if (!!info && info.length > 0) {
-        console.error(buildErrorInfo(info, src, '[Shader] shader has error'));
+    
+    // check compilation status
+    const compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+    if (!compiled) {
+        const info = gl.getShaderInfoLog(shader);
+        const errorInfo = buildErrorInfo(info || 'Unknown compilation error', src, '[Shader] shader has error');
+        console.error(errorInfo);
+        gl.deleteShader(shader);
+        throw new Error(info || 'Shader compilation failed');
     }
 
     return shader;
