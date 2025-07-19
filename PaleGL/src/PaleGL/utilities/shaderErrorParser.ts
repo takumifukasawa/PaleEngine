@@ -138,7 +138,7 @@ export function formatShaderError(parsedError: ParsedShaderError): string {
     
     let formatted = `${parsedError.summary}\n\n`;
     
-    parsedError.errors.forEach((error, index) => {
+    parsedError.errors.forEach((error) => {
         const prefix = error.type === 'error' ? '❌' : '⚠️';
         const lineInfo = error.line > 0 ? ` (行 ${error.line})` : '';
         formatted += `${prefix} ${error.message}${lineInfo}\n`;
