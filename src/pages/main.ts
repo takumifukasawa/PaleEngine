@@ -230,6 +230,86 @@ button {
   border: 1px solid #dee2e6;
 }
 
+#text-input-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 15px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.text-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.text-input-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.text-input-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: bold;
+}
+
+.text-input-field {
+  padding: 6px 10px;
+  font-size: 14px;
+  border: 2px solid #dee2e6;
+  border-radius: 4px;
+  text-align: center;
+  font-family: monospace;
+  width: 80px;
+  transition: border-color 0.3s;
+}
+
+.text-input-field:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+.text-input-field.error {
+  border-color: #f44336;
+  background-color: #ffebee;
+}
+
+.jump-button {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: bold;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #2196F3;
+  color: white;
+  transition: background-color 0.3s;
+}
+
+.jump-button:hover {
+  background-color: #1976D2;
+}
+
+.jump-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.error-message {
+  font-size: 11px;
+  color: #f44336;
+  margin-top: 2px;
+  min-height: 14px;
+}
+
 
 `;
 const styleElement = document.createElement('style');
@@ -239,7 +319,7 @@ document.head.appendChild(styleElement);
 // 音楽の小節情報
 const MUSIC_BPM = 124; // BPM（1分間の拍数）
 const BEATS_PER_MEASURE = 4; // 1小節あたりの拍数
-const TOTAL_MEASURES = 90; // 総小節数
+const TOTAL_MEASURES = 88; // 総小節数
 const SECONDS_PER_BEAT = 60 / MUSIC_BPM; // 1拍の秒数
 const SECONDS_PER_MEASURE = SECONDS_PER_BEAT * BEATS_PER_MEASURE; // 1小節の秒数
 const SOUND_DURATION = TOTAL_MEASURES * SECONDS_PER_MEASURE; // 合計音の時間 [sec]
@@ -369,6 +449,76 @@ measureDisplay.setAttribute('id', 'measure-display');
 measureDisplay.textContent = `小節 1 / ${TOTAL_MEASURES}`;
 controlsElement.appendChild(measureDisplay);
 
+// 文字入力コントロール
+const textInputControlsElement = document.createElement('div');
+textInputControlsElement.setAttribute('id', 'text-input-controls');
+controlsElement.appendChild(textInputControlsElement);
+
+// 時間入力グループ
+const timeInputGroup = document.createElement('div');
+timeInputGroup.className = 'text-input-group';
+timeInputGroup.style.display = 'none'; // 初期状態では非表示
+
+const timeInputLabel = document.createElement('div');
+timeInputLabel.className = 'text-input-label';
+timeInputLabel.textContent = '時間指定 (mm:ss.s)';
+timeInputGroup.appendChild(timeInputLabel);
+
+const timeInputRow = document.createElement('div');
+timeInputRow.className = 'text-input-row';
+timeInputGroup.appendChild(timeInputRow);
+
+const timeInputField = document.createElement('input');
+timeInputField.className = 'text-input-field';
+timeInputField.type = 'text';
+timeInputField.placeholder = '1:23.5';
+timeInputField.setAttribute('id', 'time-input-field');
+timeInputRow.appendChild(timeInputField);
+
+const timeJumpButton = document.createElement('button');
+timeJumpButton.className = 'jump-button';
+timeJumpButton.textContent = 'ジャンプ';
+timeJumpButton.setAttribute('id', 'time-jump-button');
+timeInputRow.appendChild(timeJumpButton);
+
+const timeErrorMessage = document.createElement('div');
+timeErrorMessage.className = 'error-message';
+timeInputGroup.appendChild(timeErrorMessage);
+
+textInputControlsElement.appendChild(timeInputGroup);
+
+// 小節入力グループ
+const measureInputGroup = document.createElement('div');
+measureInputGroup.className = 'text-input-group';
+
+const measureInputLabel = document.createElement('div');
+measureInputLabel.className = 'text-input-label';
+measureInputLabel.textContent = '小節指定';
+measureInputGroup.appendChild(measureInputLabel);
+
+const measureInputRow = document.createElement('div');
+measureInputRow.className = 'text-input-row';
+measureInputGroup.appendChild(measureInputRow);
+
+const measureInputField = document.createElement('input');
+measureInputField.className = 'text-input-field';
+measureInputField.type = 'text';
+measureInputField.placeholder = '45';
+measureInputField.setAttribute('id', 'measure-input-field');
+measureInputRow.appendChild(measureInputField);
+
+const measureJumpButton = document.createElement('button');
+measureJumpButton.className = 'jump-button';
+measureJumpButton.textContent = 'ジャンプ';
+measureJumpButton.setAttribute('id', 'measure-jump-button');
+measureInputRow.appendChild(measureJumpButton);
+
+const measureErrorMessage = document.createElement('div');
+measureErrorMessage.className = 'error-message';
+measureInputGroup.appendChild(measureErrorMessage);
+
+textInputControlsElement.appendChild(measureInputGroup);
+
 // ボリュームコントロール
 const volumeControlElement = document.createElement('div');
 volumeControlElement.setAttribute('id', 'volume-control');
@@ -376,7 +526,7 @@ controlsElement.appendChild(volumeControlElement);
 
 const volumeLabel = document.createElement('div');
 volumeLabel.setAttribute('id', 'volume-label');
-volumeLabel.textContent = 'ボリューム: 50%';
+volumeLabel.textContent = 'ボリューム: 100%';
 volumeControlElement.appendChild(volumeLabel);
 
 const volumeBar = document.createElement('input');
@@ -385,7 +535,7 @@ volumeBar.type = 'range';
 volumeBar.min = '0';
 volumeBar.max = '100';
 volumeBar.step = '1';
-volumeBar.value = '50';
+volumeBar.value = '100';
 volumeControlElement.appendChild(volumeBar);
 
 const canvasElement = document.createElement('canvas');
@@ -401,7 +551,7 @@ let currentTime = 0;
 let animationId: number | null = null;
 let isSeeking = false;
 let wasPlayingBeforeSeek = false;
-let currentVolume = 0.5; // 初期ボリューム50%
+let currentVolume = 1.0; // 初期ボリューム100%
 let currentSeekMode: 'time' | 'measure' = 'measure'; // 現在のシークモード
 
 // 時間と小節の相互変換関数
@@ -415,6 +565,94 @@ const measureToTime = (measure: number): number => {
 
 const getCurrentMeasure = (): number => {
     return timeToMeasure(currentTime);
+};
+
+// 時間文字列パース関数
+const parseTimeString = (timeString: string): { isValid: boolean; seconds?: number; error?: string } => {
+    if (!timeString.trim()) {
+        return { isValid: false, error: '時間を入力してください' };
+    }
+
+    // mm:ss.s, mm:ss, m:ss.s, m:ss の形式をサポート
+    const timePattern = /^(\d{1,2}):([0-5]?\d)(?:\.(\d{1,3}))?$/;
+    const match = timeString.trim().match(timePattern);
+
+    if (!match) {
+        return { isValid: false, error: 'mm:ss.s 形式で入力してください' };
+    }
+
+    const minutes = parseInt(match[1], 10);
+    const seconds = parseInt(match[2], 10);
+    const milliseconds = match[3] ? parseInt(match[3].padEnd(3, '0'), 10) : 0;
+
+    const totalSeconds = minutes * 60 + seconds + milliseconds / 1000;
+
+    if (totalSeconds > SOUND_DURATION) {
+        const maxMinutes = Math.floor(SOUND_DURATION / 60);
+        const maxSeconds = (SOUND_DURATION % 60).toFixed(1);
+        return { 
+            isValid: false, 
+            error: `最大時間は ${maxMinutes}:${maxSeconds.padStart(4, '0')} です` 
+        };
+    }
+
+    return { isValid: true, seconds: totalSeconds };
+};
+
+// 小節番号パース関数
+const parseMeasureString = (measureString: string): { isValid: boolean; measure?: number; error?: string } => {
+    if (!measureString.trim()) {
+        return { isValid: false, error: '小節番号を入力してください' };
+    }
+
+    const measureNumber = parseInt(measureString.trim(), 10);
+
+    if (isNaN(measureNumber)) {
+        return { isValid: false, error: '数値で入力してください' };
+    }
+
+    if (measureNumber < 1 || measureNumber > TOTAL_MEASURES) {
+        return { 
+            isValid: false, 
+            error: `1〜${TOTAL_MEASURES} の範囲で入力してください` 
+        };
+    }
+
+    return { isValid: true, measure: measureNumber };
+};
+
+// エラー表示とスタイル制御関数
+const showInputError = (inputField: HTMLInputElement, errorElement: HTMLElement, errorMessage: string) => {
+    inputField.classList.add('error');
+    errorElement.textContent = errorMessage;
+};
+
+const clearInputError = (inputField: HTMLInputElement, errorElement: HTMLElement) => {
+    inputField.classList.remove('error');
+    errorElement.textContent = '';
+};
+
+// 統一されたシーク処理関数
+const performSeek = (targetTime: number) => {
+    // 再生中の場合は一時停止
+    if (isPlaying) {
+        stopSound(glslSoundWrapper);
+        wasPlayingBeforeSeek = true;
+        isSeeking = true;
+    }
+
+    currentTime = Math.max(0, Math.min(targetTime, SOUND_DURATION));
+    updateTimeDisplay();
+
+    // 再生中だった場合は指定位置から再開
+    if (wasPlayingBeforeSeek) {
+        playSound(glslSoundWrapper, { time: currentTime, volume: currentVolume });
+        wasPlayingBeforeSeek = false;
+        isSeeking = false;
+        if (!animationId) {
+            updateTimeDisplay();
+        }
+    }
 };
 
 // 時間表示を更新する関数
@@ -563,6 +801,57 @@ volumeBar.addEventListener('input', () => {
     }
 });
 
+// 時間ジャンプボタンのイベントリスナー
+timeJumpButton.addEventListener('click', () => {
+    clearInputError(timeInputField, timeErrorMessage);
+    
+    const parseResult = parseTimeString(timeInputField.value);
+    if (!parseResult.isValid) {
+        showInputError(timeInputField, timeErrorMessage, parseResult.error!);
+        return;
+    }
+    
+    performSeek(parseResult.seconds!);
+    timeInputField.value = ''; // 成功時はクリア
+});
+
+// 小節ジャンプボタンのイベントリスナー
+measureJumpButton.addEventListener('click', () => {
+    clearInputError(measureInputField, measureErrorMessage);
+    
+    const parseResult = parseMeasureString(measureInputField.value);
+    if (!parseResult.isValid) {
+        showInputError(measureInputField, measureErrorMessage, parseResult.error!);
+        return;
+    }
+    
+    const targetTime = measureToTime(parseResult.measure!);
+    performSeek(targetTime);
+    measureInputField.value = ''; // 成功時はクリア
+});
+
+// 入力フィールドでのEnterキー対応
+timeInputField.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        timeJumpButton.click();
+    }
+});
+
+measureInputField.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        measureJumpButton.click();
+    }
+});
+
+// 入力中のエラークリア
+timeInputField.addEventListener('input', () => {
+    clearInputError(timeInputField, timeErrorMessage);
+});
+
+measureInputField.addEventListener('input', () => {
+    clearInputError(measureInputField, measureErrorMessage);
+});
+
 // シークモード切り替えのイベントリスナー
 const handleSeekModeChange = () => {
     const selectedMode = document.querySelector('input[name="seekMode"]:checked') as HTMLInputElement;
@@ -574,12 +863,16 @@ const handleSeekModeChange = () => {
         timeDisplay.style.display = 'block';
         measureSeekBar.style.display = 'none';
         measureDisplay.style.display = 'none';
+        timeInputGroup.style.display = 'block';
+        measureInputGroup.style.display = 'none';
     } else {
         // 小節ベースモード
         seekBar.style.display = 'none';
         timeDisplay.style.display = 'none';
         measureSeekBar.style.display = 'block';
         measureDisplay.style.display = 'block';
+        timeInputGroup.style.display = 'none';
+        measureInputGroup.style.display = 'block';
     }
 };
 
