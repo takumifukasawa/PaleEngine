@@ -7,16 +7,9 @@ uniform float uSampleRate;
 
 out vec2 vSound;
 
-// --- custom begin
-
-#define BPM 124.
-
-// --- custom end
-
+#define BPM 120.
 #define PI 3.1415
 #define TAU 6.2831
-
-#define SA(a) clamp(a, 0., 1.)
 
 #define T1 1.
 #define T2 2.
@@ -34,8 +27,49 @@ out vec2 vSound;
 
 #define S(a) 1, a
 
+/*
 // base
-#define B1(a) 35, a
+#define E2(a) 40, a
+#define F2(a) 41, a
+#define Fsh2(a) 42, a
+#define G2(a) 43, a
+#define A2(a) 45, a
+#define Ash2(a) 46, a
+#define B2(a) 47, a
+#define C3(a) 48, a
+#define D3(a) 50, a
+#define Dsh3(a) 51, a
+#define E3(a) 52, a
+#define F3(a) 53, a
+#define Fsh3(a) 54, a
+#define G3(a) 55, a
+#define A3(a) 57, a
+#define Ash3(a) 58, a
+#define B3(a) 59, a
+#define C4(a) 60, a
+#define D4(a) 62, a
+#define Dsh4(a) 63, a
+#define E4(a) 64, a
+#define F4(a) 65, a
+#define Gb4(a) 66, a
+#define G4(a) 67, a
+#define A4(a) 69, a
+#define B4(a) 71, a
+#define C5(a) 72, a
+#define D5(a) 74, a
+#define E5(a) 76, a
+#define F5(a) 77, a
+#define G5(a) 79, a
+#define A5(a) 81, a
+#define B5(a) 83, a
+#define C6(a) 84, a
+#define D6(a) 86, a
+#define E6(a) 88, a
+*/
+
+/*
+
+// base
 #define Eb2(a) 39, a
 #define E2(a) 40, a
 #define F2(a) 41, a
@@ -86,98 +120,247 @@ out vec2 vSound;
 #define D6(a) 86, a
 #define Eb6(a) 87, a
 #define E6(a) 88, a
+*/
+
+/*
+// harmony base
+#define CM2(a) N3(36, 40, 43), a
+#define DM2(a) N3(38, 42, 45), a
+#define Em2(a) N3(40, 43, 47), a
+#define Fshdim2(a) N3(42, 45, 48), a
+#define GM2(a) N3(43, 47, 50), a
+#define Am2(a) N3(45, 48, 52), a
+#define Bm2(a) N3(47, 50, 54), a
+#define CM3(a) N3(48, 52, 55), a
+#define DM3(a) N3(50, 54, 57), a
+#define Em3(a) N3(52, 55, 59), a
+#define Fshdim3(a) N3(53, 56, 59), a
+#define GM3(a) N3(55, 59, 62), a
+#define Am3(a) N3(57, 60, 64), a
+#define Bm3(a) N3(59, 62, 66), a
+#define CM4(a) N3(60, 64, 67), a
+#define DM4(a) N3(62, 66, 69), a
+#define Em4(a) N3(64, 67, 71), a
+#define Fshdim4(a) N3(65, 68, 71), a
+#define GM4(a) N3(67, 71, 74), a
+#define Am4(a) N3(69, 72, 76), a
+#define Bm4(a) N3(71, 74, 78), a
+#define CM5(a) N3(72, 76, 79), a
+#define DM5(a) N3(74, 78, 81), a
+#define Em5(a) N3(76, 79, 83), a
+#define Fshdim5(a) N3(77, 80, 83), a
+#define GM5(a) N3(79, 83, 86), a
+#define Am5(a) N3(81, 84, 88), a
+#define Bm5(a) N3(83, 86, 90), a
+#define CM6(a) N3(84, 88, 91), a
+#define DM6(a) N3(86, 90, 93), a
+#define Em6(a) N3(88, 91, 95), a
+*/
 
 /*
 MIDI Number,Note Name,Frequency
 21,A0,27.5
-22,Bb0,29.14
+22,A#0,29.14
 23,B0,30.87
 24,C1,32.7
-25,Db1,34.65
+25,C#1,34.65
 26,D1,36.71
-27,Eb1,38.89
+27,D#1,38.89
 28,E1,41.2
 29,F1,43.65
-30,Gb1,46.25
+30,F#1,46.25
 31,G1,49.0
-32,Ab1,51.91
+32,G#1,51.91
 33,A1,55.0
-34,Bb1,58.27
+34,A#1,58.27
 35,B1,61.74
 36,C2,65.41
-37,Db2,69.3
+37,C#2,69.3
 38,D2,73.42
-39,Eb2,77.78
+39,D#2,77.78
 40,E2,82.41
 41,F2,87.31
-42,Gb2,92.5
+42,F#2,92.5
 43,G2,98.0
-44,Ab2,103.83
+44,G#2,103.83
 45,A2,110.0
-46,Bb2,116.54
+46,A#2,116.54
 47,B2,123.47
 48,C3,130.81
-49,Db3,138.59
+49,C#3,138.59
 50,D3,146.83
-51,Eb3,155.56
+51,D#3,155.56
 52,E3,164.81
 53,F3,174.61
-54,Gb3,185.0
+54,F#3,185.0
 55,G3,196.0
-56,Ab3,207.65
+56,G#3,207.65
 57,A3,220.0
-58,Bb3,233.08
+58,A#3,233.08
 59,B3,246.94
 60,C4,261.63
-61,Db4,277.18
+61,C#4,277.18
 62,D4,293.66
-63,Eb4,311.13
+63,D#4,311.13
 64,E4,329.63
 65,F4,349.23
-66,Gb4,369.99
+66,F#4,369.99
 67,G4,392.0
-68,Ab4,415.3
+68,G#4,415.3
 69,A4,440.0
-70,Bb4,466.16
+70,A#4,466.16
 71,B4,493.88
 72,C5,523.25
-73,Db5,554.37
+73,C#5,554.37
 74,D5,587.33
-75,Eb5,622.25
+75,D#5,622.25
 76,E5,659.26
 77,F5,698.46
-78,Gb5,739.99
+78,F#5,739.99
 79,G5,783.99
-80,Ab5,830.61
+80,G#5,830.61
 81,A5,880.0
-82,Bb5,932.33
+82,A#5,932.33
 83,B5,987.77
 84,C6,1046.5
-85,Db6,1108.73
+85,C#6,1108.73
 86,D6,1174.66
-87,Eb6,1244.51
+87,D#6,1244.51
 88,E6,1318.51
 89,F6,1396.91
-90,Gb6,1479.98
+90,F#6,1479.98
 91,G6,1567.98
-92,Ab6,1661.22
+92,G#6,1661.22
 93,A6,1760.0
-94,Bb6,1864.66
+94,A#6,1864.66
 95,B6,1975.53
 96,C7,2093.0
-97,Db7,2217.46
+97,C#7,2217.46
 98,D7,2349.32
-99,Eb7,2489.02
+99,D#7,2489.02
 100,E7,2637.02
 101,F7,2793.83
-102,Gb7,2959.96
+102,F#7,2959.96
 103,G7,3135.96
-104,Ab7,3322.44
+104,G#7,3322.44
 105,A7,3520.0
-106,Bb7,3729.31
+106,A#7,3729.31
 107,B7,3951.07
 108,C8,4186.01
 */
+
+// - Gm
+// G, A, A#, C, D, D#, F
+// -- Gm tri
+// G, B#, D
+// -- A demish tri
+// A, C, D#
+// -- C# M tri
+// C#, D, F
+// -- C minor tri
+// C, D#, G
+// -- D minor tri
+// D, F, A
+// -- D# major tri
+// D#, G, C#
+// -- F major tri
+// F, A, C
+
+// base for demo
+#define F2(a) 41, a
+#define Fsh2(a) 42, a
+#define G2(a) 43, a
+#define A2(a) 45, a
+#define Ash2(a) 46, a
+#define B2(a) 47, a
+#define C3(a) 48, a
+#define D3(a) 50, a
+#define Dsh3(a) 51, a
+#define E3(a) 52, a
+#define F3(a) 53, a
+#define Fsh3(a) 54, a
+#define G3(a) 55, a
+#define Ab3(a) 56, a
+#define A3(a) 57, a
+#define Ash3(a) 58, a
+#define B3(a) 59, a
+#define C4(a) 60, a
+#define Csh3(a) 61, a
+#define D4(a) 62, a
+#define Dsh4(a) 63, a
+#define E4(a) 64, a
+#define F4(a) 65, a
+#define Gb4(a) 66, a
+#define G4(a) 67, a
+#define A4(a) 69, a
+#define Ash4(a) 70, a
+#define B4(a) 71, a
+// #define C5(a) 72, a
+// #define D5(a) 74, a
+// #define E5(a) 76, a
+// #define F5(a) 77, a
+// #define G5(a) 79, a
+// #define A5(a) 81, a
+// #define B5(a) 83, a
+// #define C6(a) 84, a
+// #define D6(a) 86, a
+// #define E6(a) 88, a
+
+// --- harmony
+
+#define Ab3m7(a) N5() // Ab3,B3,Eb4,Gb4
+
+// --- harmony for demo tmp
+#define Gm3(a) N3(55, 61, 62), a // G2,Ash2,D3
+#define Gm3I1(a) N3(46, 50, 55), a // Ash2,D3,G3
+#define Gm3I2(a) N3(50, 55, 57), a // D3,G3,A3
+#define FM3I2(a) N3(48, 53, 57), a // C3,F3,A3
+#define Dm3(a) N3(50, 53, 57), a // D3,F3,A3
+#define Cm3(a) N3(48, 51, 55), a // C3,Dsh3,G3
+#define DshMI2(a) N3(46, 51, 55), a // Ash2,Dsh3,G3
+
+// float chord(float n) {
+//     if(n < 1.) {
+//         return 0.;
+//     }
+//     return (
+//     n < 2. ? 55. :
+//     n < 3. ? 58. :
+//     n < 4. ? 62. :
+//     65.
+//     );
+// }
+
+// -----------
+// noise
+// ref: https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83 
+//
+
+// float mod289(float x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
+// vec4 mod289(vec4 x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
+// vec4 perm(vec4 x){return mod289(((x * 34.0) + 1.0) * x);}
+// 
+// float noise(vec3 p){
+//     vec3 a = floor(p);
+//     vec3 d = p - a;
+//     d = d * d * (3.0 - 2.0 * d);
+// 
+//     vec4 b = a.xxyy + vec4(0.0, 1.0, 0.0, 1.0);
+//     vec4 k1 = perm(b.xyxy);
+//     vec4 k2 = perm(k1.xyxy + b.zzww);
+// 
+//     vec4 c = k2 + a.zzzz;
+//     vec4 k3 = perm(c);
+//     vec4 k4 = perm(c + 1.0);
+// 
+//     vec4 o1 = fract(k3 * (1.0 / 41.0));
+//     vec4 o2 = fract(k4 * (1.0 / 41.0));
+// 
+//     vec4 o3 = o2 * d.z + o1 * (1.0 - d.z);
+//     vec2 o4 = o3.yw * d.x + o3.xz * (1.0 - d.x);
+// 
+//     return o4.y * d.y + o4.x * (1.0 - d.y);
+// }
 
 // https://www.shadertoy.com/view/4djSRW
 vec4 noise(float p) {
@@ -186,8 +369,10 @@ vec4 noise(float p) {
     return fract((p4.xxyz + p4.yzzw) * p4.zywx);
 }
 
+
 // https://www.shadertoy.com/view/4sSSWz
 float noise2(float phi) { return fract(sin(phi * 0.055753) * 122.3762) * 4.0 - 3.0; }
+
 
 // ----------
 
@@ -211,10 +396,6 @@ float timeToBeat(float time) {
 
 float beatToTime(float beat) {
     return beat / BPM * 60.;
-}
-
-bool isInMeasure(float measure, float start, float end) {
-    return start <= measure && measure < end;
 }
 
 #define BEAT_TO_TIME(beat) beat / BPM * 60.
@@ -248,16 +429,18 @@ float saw(float note, float phase) {
     return 2. * fract(phase) - 1.;
 }
 
-float square(float note, float phase) {
+float square(float phase) {
     return fract(phase) < .5 ? -1. : 1.;
 }
 
-float triangle(float note, float phase) {
+float triangle(float phase) {
     return 1. - 4. * abs(fract(phase) - .5);
 }
 
 // low pass filter
 // ref: https://www.shadertoy.com/view/4sjSW1 
+
+
 float lowPassFilter(float inp, float cut_lp, float res_lp) {
     float n1 = 0.0;
     float n2 = 0.0;
@@ -273,7 +456,18 @@ float lowPassFilter(float inp, float cut_lp, float res_lp) {
     return n2;
 }
 
-// --- base
+//
+// base
+//
+
+// fake base
+// vec2 base(float note, float time) {
+//     float freq = noteToFreq(note);
+//     float br = 1.;
+//     // fm
+//     float env = exp(-4. * time);
+//     return vec2(sin(freq * time + sin(freq * br * time)) * env); 
+// }
 
 // ref: https://www.shadertoy.com/view/ldXXDj
 float base( float note, float time )
@@ -305,7 +499,9 @@ float base( float note, float time )
     return y;
 }
 
-// --- drums
+//
+// drums
+//
 
 vec2 kick(float note, float time) {
     // float amp = exp(-5. * time);
@@ -357,7 +553,9 @@ vec2 crash1(float note, float time) {
     return vec2(dist(v * amp, 2.));
 }
 
-// --- synthesizer
+//
+// synthesizer
+//
 
 #define NSPC 256
 
@@ -487,7 +685,7 @@ vec2 synth(float note, float t) {
 
 vec2 bass(float note, float time) {
     float freq = noteToFreq(note);
-    return vec2(square(note, freq * time) + sine(freq * time)) / 1.5;
+    return vec2(square(freq * time) + sine(freq * time)) / 1.5;
 }
 
 vec2 pad(float note, float time) {
@@ -511,8 +709,10 @@ vec2 arp(float note, float time) {
     );
 }
 
-// --- electric piano
+//
+// electric piano
 // ref: https://www.shadertoy.com/view/3scfD2
+//
 
 #define msin(x,m) sin(TAU*(x)+(m))
 
@@ -549,39 +749,6 @@ vec2 epiano(float note, float t)
     return (glass*pan + body) * 0.05 * smoothstep(0.,0.001,t);
 }
 
-// guitar
-// ref: https://www.shadertoy.com/view/lsyczW
-
-float si(float i) { return sin(fract(i) * PI * 2.0); }
-
-float guitar3(float time, float frequency, float B) {
-   float ret = 0.0;
-    float energy = 1.0;
-    for (int i = 1; i < 15; i++) {
-//      float f = frequency * pow(float(i),1.002);
-      float f = frequency * float(i) * sqrt(1.0 + float(i) * float(i) * B);
-      float v =  pow(0.75, float(i)) *  exp((-1.5 - sqrt(frequency)/20.0) * time);
-      if (i == 8 || i == 16 || i == 24) v /= 5.0;
-	  float transfer = 1.0 - exp(-f/100.0);
-      v *= energy * transfer;
-      energy = 2.0 - energy * transfer;
-        
-      ret += si(f * time) * v;
-    }
-    return ret * 7.0 / sqrt(frequency);
-}
-float guitar2(float time, int key) {
-    float frequency = 27.4 * pow(2.001, float(key)/12.0);
-     // Maybe express this in terms of frequency.
-    // Model bottom curve.
-    float B = pow(10.0, (float(key) + 1.0) / 24.0 - 5.15);
-
-    return guitar3(time, frequency, B);
-}
-
-vec2 guitar(int key, float time) {
-    return vec2(guitar2(time, key)); 
-}
 
 // ------------------------------------------------------------------------------------
 // SEQ_BEGIN
@@ -592,14 +759,6 @@ vec2 guitar(int key, float time) {
 // measureCount ... 小節数. 4拍で1小節とする
 // TODO: little-endian, big-endian 考慮する必要がある？
 // ref: https://github.com/equinor/glsl-float-to-rgba/blob/master/README.md
-// ## args
-// - rawBeat
-// - time ... 現在の時間
-// - beatTempo ... ビートのテンポ. 4拍が基本
-// - totalBeatCount ... シーケンス全体のビート数
-// - notes ... シーケンスのノート情報. [note_number, len, note_number, len, ...]
-// - noteCount ... notesの要素数 / 2
-// - toneFunc ... 音を生成する関数. note_number, time を引数にとる関数
 // #define SEQ(rawBeat, time, beatTempo, totalBeatCount, notes, noteCount, toneFunc) \
 //     float tempoScale = beatTempo / 4.; /* 4拍が基本 */ \
 //     float fLocalBeatIndex = mod(rawBeat * tempoScale, float(totalBeatCount)); /* シーケンス内でのビート番号 */ \
@@ -670,103 +829,98 @@ vec2 guitar(int key, float time) {
 // SEQ_END
 // ------------------------------------------------------------------------------------
 
-// 4拍で1小節
-float beatToMeasure(float beat) {
-    return beat * .25;
-}
+// melodies ----------------------------
 
-// ------------------------------------------------------------------------------------
-// Application
-// ------------------------------------------------------------------------------------
-
-// --- harmony
-
-// Eb2_m7: Eb2,Gb2,Bb2,Db3
-#define Eb2_m7(a) N4(39,42,46,49), a
-// Eb2_m7_Eb3: Eb2,Gb2,Bb2,Eb3
-#define Eb2_m7_Eb3(a) N4(39,42,46,51), a
-// Fm2_7: F2,Ab2,B2,Eb3
-#define Fm2_7(a) N4(41,44,47,51), a
-// Ab2m7: Ab2,B2,Eb3,Gb3
-#define Ab2_m7(a) N4(44,47,51,54), a
-// Ab2m7: Ab2,B2,Eb3,Ab3
-#define Ab2_m7_Ab3(a) N4(44,47,51,56), a
-
-// Bb2_m: Bb2,Db3,F3
-#define Bb2_m(a) N3(46,49,53), a
-// Bb2_m7: Bb2,Db3,F3,Ab3
-#define Bb2_m7(a) N4(46,49,53,56), a
-// B3_maj7: B2,Eb3,Gb3,Bb3,Eb4
-#define B3_maj7(a) N4(47,51,54,58), a
-
-// Cb3_maj7: Cb3,Eb3,Gb3,Bb3
-#define Cb3_maj7(a) N4(48,51,54,58), a
-
-// Db3_7: Db3,F3,Ab3,B3
-#define Db3_7(a) N4(49,53,56,59), a
-// Eb3_m7: Eb3,Gb3,Bb3,Db4
-#define Eb3_m7(a) N4(51,54,58,61), a
-// Ab3_m7: Ab3,B3,Eb4,Gb4
-#define Ab3_m7(a) N4(57,59,63,66), a
-
-// measure: 0-24
-vec2 epianoHarmonySeq1(float rawBeat, float time) {
-    int[8] notes = int[8](
-        Ab2_m7(8), Fm2_7(8), Eb2_m7(8), Eb2_m7_Eb3(8)
+vec2 epianoHarmonySeqBase(float rawBeat, float time) {
+    int[24] notes = int[24](
+        G3(6), G3(6), G3(4),
+        F3(6), F3(6), F3(4),
+        Dsh3(6), Dsh3(6), Dsh3(6),
+        Dsh3(6), G3(2), F3(6)
     );
-    SEQ(rawBeat, time, T8, 32., notes, 4, epiano);
 
-    return res;
+    SEQ(rawBeat, time, T16, 64., notes, 12, epiano);
+
+    return res * 3.;
 }
 
-// measure: 25-32
-vec2 epianoHarmonySeq2(float rawBeat, float time) {
+// melodies tmp ----------------------------
+
+// vec2 epianoHarmonySeqBase(float rawBeat, float time) {
+//     int[24] notes = int[24](
+//         G3(6), G3(6), G3(4),
+//         F3(6), F3(6), F3(4),
+//         Dsh3(6), Dsh3(6), Dsh3(6),
+//         Dsh3(6), G3(2), F3(6)
+//     );
+// 
+//     SEQ(rawBeat, time, T16, 64., notes, 12, epiano);
+// 
+//     return res * 3.;
+// }
+
+vec2 epianoHarmonySeqHook(float rawBeat, float time) {
+    int[42] notes = int[42](
+        Gm3I2(4), F3(2), Gm3I1(4), D3(2), G3(4),
+        FM3I2(4), D3(2), Dm3(4), F3(2), F3(4),
+        Cm3(4), F3(2), DshMI2(4), F3(2), Dsh3(4),
+        F3(2), Dsh3(4), Ash3(2), G3(2), F3(2), FM3I2(4)
+    );
+
+    // SEQ(rawBeat, time, T8, 16., notes, 5, epiano);
+    SEQ(rawBeat, time, T16, 64., notes, 21, epiano);
+
+    return res * 3.;
+}
+
+vec2 synthHarmonySeqBase(float rawBeat, float time) {
+    int[4] notes = int[4](
+        G3(12), O(4)
+    );
+
+    SEQ(rawBeat, time * .1, T8, 8., notes, 2, synth);
+
+return res * 1.;
+}
+
+vec2 snareFillIntroSeq(float rawBeat, float time) {
     int[16] notes = int[16](
-        Ab2_m7(6), Ab2_m7(10),
-        Fm2_7(6), Fm2_7(10),
-        Eb2_m7(6), Eb2_m7(10),
-        Eb2_m7(6), Eb2_m7(10)
+        S(1), S(1), S(1), S(1),
+        S(1), S(1), S(1), S(1)
     );
-    SEQ(rawBeat, time, T16, 64., notes, 8, epiano);
+    
+    SEQ(rawBeat, time, T4, 8., notes, 8, snareFill);
 
-    return res;
+    return res * .1;
 }
 
-// measure: 33-40
-vec2 epianoHarmonySeq3(float rawBeat, float time) {
-    int[8] notes = int[8](
-        Eb2_m7(6), Eb2_m7(10),
-        Eb2_m7(6), Eb2_m7(10)
-    );
-    SEQ(rawBeat, time, T16, 32., notes, 4, epiano);
+vec2 arpBaseLoopSeqBase(float rawBeat, float time) {
+    // int[56] notes = int[56](
+    //     G3(1), G3(1), A3(1), G3(1), G3(1), Ash3(1), O(2),
+    //     G3(1), G3(1), A3(1), G3(1), G3(1), Ash3(1), O(2),
+    //     Dsh3(1), Dsh3(1), F3(1), Dsh3(1), Dsh3(1), G3(1), O(2),
+    //     Dsh3(1), Dsh3(1), F3(1), Dsh3(1), Dsh3(1), G3(1), O(2)
+    // );
 
-    return res;
+    // // pattern2
+    // SEQ(rawBeat, time, T8, 32., notes, 28, arp);
+
+    int[32] notes = int[32](
+        G3(1), G3(1), O(1),
+        G3(1), G3(1), O(1),
+        G3(1), G3(1), O(1),
+        F3(1), F3(1), O(1),
+        F3(1), O(1), F3(1), O(1)
+    );
+
+    // pattern2
+    SEQ(rawBeat, time, T8, 16., notes, 16, arp);
+
+
+return res * .2;
 }
 
-// measure: 41-56
-vec2 epianoHarmonySeq4(float rawBeat, float time) {
-    int[8] notes = int[8](
-        Ab2_m7(8), Bb2_m7(8), Db3_7(8), Eb3_m7(8)
-    );
-    SEQ(rawBeat, time, T8, 32., notes, 4, epiano);
-
-    return res;
-}
-
-// measure: 57-64
-vec2 epianoHarmonySeq5(float rawBeat, float time) {
-    int[16] notes = int[16](
-        Ab2_m7(6), Ab2_m7(10),
-        Ab2_m7_Ab3(6), Ab2_m7_Ab3(10),
-        Eb2_m7(6), Eb2_m7(10),
-        Eb2_m7_Eb3(6), Eb2_m7_Eb3(10)
-    );
-    SEQ(rawBeat, time, T16, 64., notes, 8, epiano);
-
-    return res;
-}
-
-vec2 snareFillSeq(float rawBeat, float time) {
+vec2 kickSeqBase(float rawBeat, float time) {
     int[32] notes = int[32](
         S(1), O(1), S(1), O(1),
         S(1), O(1), S(1), O(1),
@@ -774,274 +928,79 @@ vec2 snareFillSeq(float rawBeat, float time) {
         S(1), O(1), S(1), O(1)
     );
     
-    SEQ(rawBeat, time, T8, 16., notes, 16, snareFill);
+    SEQ(rawBeat, time, T8, 16., notes, 16, kick);
 
-    return res;
+    return res * .05;
 }
 
-// vec2 bassLowSeq(float rawBeat, float time) {
-//     int[8] notes = int[8](
-//         Ab3_m7(8), Fm3_7b5(8), Eb3_m7(8), B3_maj7(8)
-//     );
-//     SEQ(rawBeat, time, T8, 32., notes, 4, bass);
-// 
-//     return vec2(res) * .05;
-// }
-
-// measure: 0-16
-vec2 pianoMelodySeq1(float rawBeat, float time) {
-    int[24] notes = int[24](
-        O(2), Ab3(2), Ab3(2), Bb3(2), Bb3(4), O(2), Ab3(2), Ab3(2), Bb3(2), Bb3(6), O(2), Gb3(4)
+vec2 bassSeqBase(float rawBeat, float time) {
+    int[38] notes = int[38](
+    // pattern7
+    // E4(6), B4(2)
+    G3(3), G3(1), O(1), G3(2), O(1),
+    G3(3), G3(1), O(1), A3(2), O(1),
+    G3(3), G3(1), O(1), G3(2), O(1),
+    G3(3), A3(2), G3(2), O(1)
     );
- 
-    SEQ(rawBeat, time, T16, 32., notes, 12, epiano);
+    SEQ(rawBeat, time, T8, 32., notes, 19, bass);
 
-    return res;
+    return vec2(res) * .05;
+    // return vec2(res) * .05 * lowPassFilter(res.x, 100., 1.);
 }
 
-// measure: 16-24
-vec2 pianoMelodySeq2(float rawBeat, float time) {
-    int[24] notes = int[24](
-        O(2), Ab3(2), Ab3(2), Bb3(2), Db4(4), O(2), Ab3(2), Ab3(2), Bb3(2), Db4(6), O(2), Ab3(4)
-    );
- 
-    SEQ(rawBeat, time, T16, 32., notes, 12, epiano);
-
-    return res;
-}
-
-// measure: 24-32
-vec2 pianoMelodySeq3(float rawBeat, float time) {
-    int[22] notes = int[22](
-        O(2), Ab3(2), Bb3(2), Db4(2), Eb4(4), O(2), Ab3(2), Bb3(2), Db4(2), Eb4(8), O(4)
-    );
- 
-    SEQ(rawBeat, time, T16, 32., notes, 11, epiano);
-
-    return res;
-}
-
-// measure: 33-40
-vec2 pianoMelodySeq4(float rawBeat, float time) {
-    int[20] notes = int[20](
-        O(2), Ab4(2), Ab4(2), Gb4(2), Gb4(6), Ab4(2), Ab4(2), Gb4(2), Gb4(8), O(4)
-    );
- 
-    SEQ(rawBeat, time, T16, 32., notes, 10, epiano);
-
-    return res;
-}
-
-// measure: 41-56
-vec2 pianoMelodySeq5(float rawBeat, float time) {
-    int[44] notes = int[44](
-        O(2), Db4(2), Eb4(2), Gb4(2), Ab4(4), O(2), Db4(2), Eb4(2), Gb4(2), Ab4(8), O(4),
-        O(2), Eb4(2), Gb4(2), Ab4(2), Bb4(4), O(2), Eb4(2), Gb4(2), Ab4(2), Bb4(8), O(4)
-    );
- 
-    SEQ(rawBeat, time, T16, 64., notes, 22, epiano);
-
-    return res;
-}
-
-// measure: 57-64
-vec2 pianoMelodySeq6(float rawBeat, float time) {
-    int[44] notes = int[44](
-        O(2), Ab4(2), Ab4(2), Bb4(2), Bb4(4), O(2), Ab4(2), Ab4(2), Bb4(2), Bb4(4), O(8),
-        O(2), Ab4(2), Ab4(2), Gb4(2), Gb4(4), O(2), Ab4(2), Ab4(2), Gb4(2), Gb4(4), O(8)
-    );
- 
-    SEQ(rawBeat, time, T16, 64., notes, 22, epiano);
-
-    return res;
-}
-
-// measure: 65-73
-vec2 pianoMelodySeq7(float rawBeat, float time) {
-    int[18] notes = int[18](
-        Eb4(6), Ab4(6), Eb4(4), Eb4(3), Eb4(3), O(2), Eb4(3), Eb4(3), O(2)
-    );
- 
-    SEQ(rawBeat, time, T16, 32., notes, 9, epiano);
-
-    return res;
-}
-
-
-// measure: 73-81
-vec2 pianoMelodySeq8(float rawBeat, float time) {
-    int[94] notes = int[94](
-        O(1), F4(2), Eb4(1), Db4(2), Bb3(1), Ab3(1),
-        O(1), F4(2), Eb4(1), Db4(2), Bb3(1), Ab3(1),
-        O(1), F4(2), Eb4(1), Db4(2), Eb4(1), Eb4(1),
-        O(1), F4(2), Eb4(1), Db4(2), Ab4(1), F4(1),
-        O(1), F4(2), Eb4(1), Db4(2), Bb3(1), Ab3(1),
-        O(1), F4(2), Eb4(1), Db4(2), Bb3(1), Ab3(1),
-        O(1), F4(2), Eb4(1), Db4(2), Eb4(1), Eb4(1),
-        O(1), F4(2), Eb4(1), Db4(2), O(2)
-    );
- 
-    SEQ(rawBeat, time, T8, 64., notes, 47, epiano);
-
-    return res;
-}
-
-
-// vec2 arpMelodySeq1(float rawBeat, float time) {
-//     int[10] notes = int[10](
-//         O(24), Db4(2), Eb4(2), Db4(2), Eb4(2)
-//     );
-//  
-//     SEQ(rawBeat, time, T16, 32., notes, 5, arp);
-// 
-//     return res;
-// }
-vec2 arpMelodySeq1(float rawBeat, float time) {
-    int[10] notes = int[10](
-        O(24), Db4(2), Eb4(2), Db4(2), Eb4(2)
-    );
- 
-    SEQ(rawBeat, time, T16, 32., notes, 5, epiano);
-
-    return res;
-}
-
-vec2 arpMelodySeq2(float rawBeat, float time) {
+vec2 bassLowSeqBase(float rawBeat, float time) {
     int[8] notes = int[8](
-        Gb3(4), Ab3(4), Bb3(4), Ab3(4)
+    G2(8), F2(8),
+    Ash2(8), A2(8)
     );
- 
-    SEQ(rawBeat, time, T32, 16., notes, 4, arp);
+    SEQ(rawBeat, time, T8, 32., notes, 4, bass);
 
-    return res;
+return vec2(res) * .05;
+// return vec2(res) * .05 * lowPassFilter(res.x, 100., 1.);
 }
 
-vec2 leadsubMelodySeq1(float rawBeat, float time) {
+vec2 bassHighSeqBase(float rawBeat, float time) {
     int[8] notes = int[8](
-        Ab3(8), Gb3(8), Bb3(8), Gb3(8)
+    G4(8), F4(8),
+    Ash4(8), A4(8)
     );
- 
-    SEQ(rawBeat, time, T8, 32., notes, 4, leadsub2);
+    SEQ(rawBeat, time, T8, 32., notes, 4, bass);
 
-    return res;
-}
-
-// 無限小のステップを PolyBLEP で補正してエイリアシング軽減
-float polyBlep(float t, float dt){
-    if (t < dt)                { t /= dt; return 2.0*t - t*t - 1.0; }
-    else if (t > 1.0 - dt)     { t  = (t - 1.0) / dt; return t*t + 2.0*t + 1.0; }
-    return 0.0;
+return vec2(res) * .05;
+// return vec2(res) * .05 * lowPassFilter(res.x, 100., 1.);
 }
 
-// ------------------------------------------------------------
-//   Core waveforms  (phase は 0.0–1.0 wrap,  dt は 位相増分)
-// ------------------------------------------------------------
-float sineWave(float phase){
-    return sin(TAU * phase);
-}
-
-float sawWave(float phase){                 // alias-heavy / デモ用
-    return fract(phase) * 2.0 - 1.0;
-}
-float sawWaveBLEP(float phase, float dt){   // polyBLEP で帯域制限
-    float t = fract(phase);
-    float y = t * 2.0 - 1.0;
-    y -= polyBlep(t, dt);
-    return y;
-}
-
-float squareWave(float phase){              // 50% duty
-    return sign(fract(phase) - 0.5);
-}
-float squareWaveBLEP(float phase, float dt){
-    float t = fract(phase);
-    float y = sign(t - 0.5);
-    // フロントとバックの 2 箇所を補正
-    y += polyBlep(t,      dt);
-    y -= polyBlep(t - 0.5, dt);
-    return y;
-}
-
-float triangleWave(float phase){            // 誤差 0 の正三角
-    return abs(fract(phase + 0.25)*2.0 - 1.0)*2.0 - 1.0;
-}
-
-// 近似的ホワイトノイズ（値域 ±1）
-float whiteNoise(float seed){
-    // 1-LCG ハッシュ
-    seed = fract(seed * 43758.5453123 + 0.12345);
-    return seed * 2.0 - 1.0;
-}
-
-vec2 pseudoNoise(float time){
-    return vec2((fract(sin(time * 1e3) * 1e6) - .5));
+vec2 hihat1BaseLoopSeq(float rawBeat, float time) {
+    int[24] notes = int[24](
+        S(1), O(3),
+        S(1), S(1), O(2),
+        S(1), O(1), S(1), S(1),
+        O(1), S(1), O(2)
+    );
+    SEQ(rawBeat, time, T16, 16., notes, 12, hihat1);
+return res * .2;
 }
 
 // ------------------------------------------------------------
-//   noiseRiser()
-//   t          : 曲頭からの経過秒
-//   startTime  : ライザーが始まる秒
-//   len        : ライザー長（秒）
-//   seed       : 乱数シード（推奨: fragment/vertex id）
-//   returns    : −1〜+1 のノイズ値（時間に応じてフェードイン→LPF）
-// ------------------------------------------------------------
-float noiseRiser(float t, float startTime, float len, float seed)
-{
-    float rel = clamp((t - startTime) / len, 0.0, 1.0);  // 0→1
-    // if(rel <= 0.0) return 0.0;
 
-    // ① ホワイトノイズを取得
-    float n = whiteNoise(t);
-
-    // ② Ben 流 “くの字” フィルタ：序盤ロー → 終盤ハイ
-    //     簡易 LPF: 低域のみ取り出し → 時間が経つにつれ高域比率を増やす
-    float low  = n * (1.0 - rel);  // 低域 = 序盤強
-    float high = n * rel;          // 高域 = 終盤強
-    float y = low + high;
-
-    // ③ オートメーション・エンベロープ（tanh で自然なカーブ）
-    float env = smoothstep(0.0, 0.25, rel) *        // Attack
-                (1.0 - smoothstep(0.9, 1.0, rel)); // Quick Release
-    y *= env;
-
-    // ④ 軽いサチュレーションで “温かみ”
-    y = tanh(y * 2.5);
-
-    return y;
+// 4拍で1小節
+float beatToMeasure(float beat) {
+    return beat * .25;
 }
 
-float attr(float ft) {
-    return smoothstep(.01, .05, ft) * (1. - smoothstep(.95, .99, ft));
+vec2 bowan1(float time) {
+    vec2 freq = vec2(500., 560);
+    return (sin(time * freq) * sin(time * 2400.) + sin(time * freq * 2.4)) * exp(-fract(time/ 4.) * 5.) * .05;
 }
-
-float breaker(float t) {
-    return smoothstep(.01, .05, t) * (1. - smoothstep(.95, .99, t));
-}
-
-// // TODO: smoothin,smoothout
-// vec2 bowan1(float time) {
-//     vec2 freq = vec2(500., 560);
-//     float tempo = 1.;
-//     return (sin(time * freq) * sin(time * 2400.) + sin(time * freq * 2.4)) * exp(-fract(time/ tempo) * 5.) * .05;
-// }
 
 vec2 bowan2(float time) {
-    vec2 freq = vec2(140., 160);
-    float tempo = .25;
-    float t = fract(time / tempo);
-    float s = attr(t);
-    float att = exp(-t * 1.);
-    return
-        (
-            sin(t * freq) * sin(t * 20.)
-            + sin(t * freq * 1.4)
-        ) * att * s;
+    vec2 freq = vec2(600., 660);
+    return (sin(time * freq) * sin(time * 150.) + sin(time * freq * 1.8)) * exp(-fract(time / 2.) * 5.) * .1;
 }
 
 vec2 boom(float time) {
     vec2 freq = vec2(500., 560);
-    float tempo = .5;
-    return (sin(time * freq) * sin(time * 100.) + sin(time * freq * tempo)) * .5;
+    return (sin(time * freq) * sin(time * 100.) + sin(time * freq * 2.0)) * .05;
 }
 
 // ステレオ出力のためvec2
@@ -1053,80 +1012,82 @@ vec2 mainSound(float time) {
     float measure = beatToMeasure(beat);
 
     float baseAttenuation = smoothstep(.0002, .0006, mod(measure, 1.));
-    
-    float tb = timeToBeat(time);
+    sound += bowan1(time) * baseAttenuation;
+    sound += bowan2(time) * baseAttenuation;
+    sound += boom(time);
 
-    // sound += bassLowSeq(tb, time);
-    // sound += pianoMelodySeq2(tb, time);
-    // sound += pianoMelodySeq3(tb, time);
-    // sound += epianoHarmonySeq2(tb, time) * 2.;
-    
-    sound += arpMelodySeq1(tb, time) * .5;
-    sound += arpMelodySeq2(tb, time) * .05;
-    // sound += leadsubMelodySeq1(tb, time) * .1;
-    
-    float riser = noiseRiser(time, 0., 8., 1.) * .05;
-    
-    sound += bowan2(measure) * .25;
- 
-    if(isInMeasure(measure, 0., 8.)) {
-        sound += epianoHarmonySeq1(tb, time) * 2.;
-        sound += pianoMelodySeq1(tb, time);
-        
-    } else if(isInMeasure(measure, 8., 16.)) {
-        sound += snareFillSeq(tb, time) * .05;
-        sound += epianoHarmonySeq1(tb, time) * 2.;
-        sound += pianoMelodySeq1(tb, time);
-        
-    } else if(isInMeasure(measure, 16., 24.)) {
-        sound += snareFillSeq(tb, time) * .05;
-        sound += epianoHarmonySeq1(tb, time) * 2.;
-        sound += pianoMelodySeq2(tb, time);
-        
-    } else if(isInMeasure(measure, 24., 32.)) {
-        sound += snareFillSeq(tb, time) * .05;
-        sound += epianoHarmonySeq1(tb, time) * 2.;
-        sound += pianoMelodySeq3(tb, time);
-        
-    } else if(isInMeasure(measure, 32., 40.)) {
-        sound += snareFillSeq(tb, time) * .05;
-        sound += epianoHarmonySeq3(tb, time) * 2.;
-        sound += pianoMelodySeq4(tb, time);
-        
-    } else if(isInMeasure(measure, 40., 48.)) {
-        // sound += snareFillSeq(tb, time) * .05;
-        sound += epianoHarmonySeq4(tb, time) * 2.;
-        sound += pianoMelodySeq5(tb, time);
-        
-    } else if(isInMeasure(measure, 48., 56.)) {
-        sound += snareFillSeq(tb, time) * .05;
-        sound += epianoHarmonySeq4(tb, time) * 2.;
-        sound += pianoMelodySeq5(tb, time);
-        
-    } else if(isInMeasure(measure, 57., 64.)) {
-        sound += snareFillSeq(tb, time) * .05;
-        sound += epianoHarmonySeq5(tb, time) * 2.;
-        sound += pianoMelodySeq6(tb, time);
-        
-    } else if(isInMeasure(measure, 64., 72.)) {
-        sound += snareFillSeq(tb, time) * .05;
-        sound += epianoHarmonySeq5(tb, time) * 2.;
-        sound += pianoMelodySeq7(tb, time);
-        
-    } else if(isInMeasure(measure, 72., 80.)) {
-        sound += snareFillSeq(tb, time) * .05;
-        sound += epianoHarmonySeq5(tb, time) * 2.;
-        sound += pianoMelodySeq8(tb, time);
-        
-    } else if(isInMeasure(measure, 80., 88.)) {
-        sound += epianoHarmonySeq1(tb, time) * 2.;
-        sound += pianoMelodySeq1(tb, time);
-        
+    // intro
+    // 0 ~ 8
+    if(0. <= measure && measure < 8.) {
+        // sound +=
+        //     0.
+        //     + arpBaseLoopSeqBase(beat, time)
+        //     ;
+    // melody A_1 [16s-32s]
+    } else if(8. <= measure && measure < 16.) {
+        sound +=
+            0.
+            + epianoHarmonySeqBase(beat, time)
+            ;
+    // melody A_2 [32s-48s]
+    } else if(16. <= measure && measure < 24.) {
+        sound +=
+            0.
+            + epianoHarmonySeqBase(beat, time)
+            + hihat1BaseLoopSeq(beat, time)
+            ;
+    // melody A_3 [48s-64s]
+    } else if(24. <= measure && measure < 32.) {
+        sound +=
+            0.
+            + epianoHarmonySeqBase(beat, time)
+            + bassLowSeqBase(beat, time)
+            + snareFillIntroSeq(beat, time)
+            + kickSeqBase(beat, time);
+            ;
+    // melody B_1 [64s-80s]
+    } else if(32. <= measure && measure < 40.) {
+        sound +=
+            0.
+            + bassLowSeqBase(beat, time)
+            + arpBaseLoopSeqBase(beat, time)
+            ;
+    // melody B_2 [80s-96s]
+    } else if(40. <= measure && measure < 48.) {
+        sound +=
+            0.
+            + epianoHarmonySeqBase(beat, time)
+            + bassHighSeqBase(beat, time)
+            + hihat1BaseLoopSeq(beat, time)
+            ;
+    // melody hook_1 [96s-112s]
+    } else if(48. <= measure && measure < 56.) {
+        sound +=
+            0.
+            + epianoHarmonySeqHook(beat, time)
+            + bassHighSeqBase(beat, time)
+            // + arpBaseLoopSeqBase(beat, time)
+            ;
+    // melody hook_2 [112s-128s]
+    } else if(56. <= measure && measure < 64.) {
+        sound +=
+            0.
+            + epianoHarmonySeqHook(beat, time)
+            + bassLowSeqBase(beat, time)
+            + hihat1BaseLoopSeq(beat, time)
+            + snareFillIntroSeq(beat, time)
+            + kickSeqBase(beat, time)
+            // + arpBaseLoopSeqBase(beat, time)
+            ;
+    // melody outro [128s-144s]
+    } else if(64. <= measure && measure < 72.) {
+        sound *= (1. - smoothstep(71., 72., measure));
+        sound +=
+            0.
+            + epianoHarmonySeqBase(beat, time) * (1. - smoothstep(64., 72., measure))
+            + arpBaseLoopSeqBase(beat, time)
+            ;
     }
-
-    // sound = vec2(saw(0., 100. * time + (.2 * sine(5., time))));
-    // sound = leadsub(60., time);
-
     return sound;
 }
 
@@ -1138,12 +1099,27 @@ void main() {
     vec2 c = vec2(1.);
     c =
         1.
-        * epiano(time, time)
+        // * beatToTime(time)
+        * snareFill(time, time)
+        * base(time, time)
+        * snareFill(time, time)
+        * arp(time, time)
+        * hihat1(time, time)
         * bass(time, time)
-        * vec2(1.);
+        * epiano(time, time)
+        * kick(time, time)
+        * pad(time, time)
+        * attackbass(time, time)
+        * leadsub(time, time)
+        * leadsub2(time, time)
+        * synth(time, time)
+        * saw(time, time)
+    * vec2(1.);
     c.x = 1.;
     c.y = 1.;
     // end
-    
+
     vSound = mainSound(time) * c;
+    
+    // vSound = vec2(1.);
 }
