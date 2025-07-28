@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 repo=https://github.com/takumifukasawa/PaleGL.git

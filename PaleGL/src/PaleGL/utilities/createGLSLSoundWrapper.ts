@@ -4,10 +4,11 @@ import {
     GLSLSound,
     loadGLSLSound,
     playGLSLSound,
-    setGLSLSoundVolume, stopGLSLSound
+    setGLSLSoundVolume,
+    stopGLSLSound,
 } from '@/PaleGL/core/glslSound.ts';
 import { Gpu } from '@/PaleGL/core/gpu.ts';
-import { parseShaderError, formatShaderError } from '@/PaleGL/utilities/shaderErrorParser.ts';
+import { formatShaderError, parseShaderError } from '@/PaleGL/utilities/shaderErrorParser.ts';
 
 export type GLSLSoundWrapper = {
     glslSound: GLSLSound;
@@ -16,14 +17,14 @@ export type GLSLSoundWrapper = {
     // play: (args?: { volume?: number; time?: number; reload?: boolean }) => void;
     // stop: () => void;
     // getCurrentTime: () => number | undefined;
-}
+};
 
 export function createGLSLSoundWrapper(gpu: Gpu, shader: string, duration: number): GLSLSoundWrapper {
     const glslSound: GLSLSound = createGLSLSound(gpu, shader, duration);
     // let _isPlaying = false;
 
     // const load = () => {
-    //     glslSound = 
+    //     glslSound =
     // };
 
     // const warmup = () => {
@@ -53,9 +54,9 @@ export function createGLSLSoundWrapper(gpu: Gpu, shader: string, duration: numbe
     //     _isPlaying = false;
     //     glslSound?.stop();
     // };
-    // 
+    //
     // const isPlaying = () => _isPlaying;
-    // 
+    //
     // const getCurrentTime = () => {
     //     return glslSound?.getCurrentTime();
     // }
@@ -75,7 +76,14 @@ export function loadSound(glslSoundWrapper: GLSLSoundWrapper) {
     loadGLSLSound(glslSoundWrapper.glslSound);
 }
 
-export function playSound(glslSoundWrapper: GLSLSoundWrapper, args: { volume?: number; time?: number; reload?: boolean } = {}) {
+export function playSound(
+    glslSoundWrapper: GLSLSoundWrapper,
+    args: {
+        volume?: number;
+        time?: number;
+        reload?: boolean;
+    } = {}
+) {
     const { volume = 1, time = 0, reload = false } = args;
     console.log(`[glslSoundWrapper.play] args - volume: ${volume}, time: ${time}, reload: ${reload}`);
     if (reload) {
@@ -104,40 +112,54 @@ export function resetSoundPosition(glslSoundWrapper: GLSLSoundWrapper) {
     glslSoundWrapper.glslSound.offsetTime = 0;
 }
 
-export function updateShader(glslSoundWrapper: GLSLSoundWrapper, newShader: string): { success: boolean; error?: string } {
+export function setSoundVolume(glslSoundWrapper: GLSLSoundWrapper, volume: number) {
+    console.log(`[glslSoundWrapper.setVolume] volume: ${volume}`);
+    setGLSLSoundVolume(glslSoundWrapper.glslSound, volume);
+}
+
+export function updateShader(
+    glslSoundWrapper: GLSLSoundWrapper,
+    newShader: string
+): {
+    success: boolean;
+    error?: string;
+} {
     try {
         console.log('[glslSoundWrapper.updateShader] Updating shader...');
-        
+
         // 現在再生中の場合は停止
         const wasPlaying = glslSoundWrapper.isPlaying;
         if (wasPlaying) {
             stopSound(glslSoundWrapper);
         }
-        
+
         // 新しいシェーダーでGLSLSoundを再作成
-        const newGlslSound = createGLSLSound(glslSoundWrapper.glslSound.gpu, newShader, glslSoundWrapper.glslSound.duration);
-        
+        const newGlslSound = createGLSLSound(
+            glslSoundWrapper.glslSound.gpu,
+            newShader,
+            glslSoundWrapper.glslSound.duration
+        );
+
         // 音源データを再生成
         loadGLSLSound(newGlslSound);
-        
+
         // 古いGLSLSoundを新しいものに置き換え
         glslSoundWrapper.glslSound = newGlslSound;
         glslSoundWrapper.isPlaying = false;
-        
+
         console.log('[glslSoundWrapper.updateShader] Shader updated successfully');
         return { success: true };
-        
     } catch (error) {
         console.error('[glslSoundWrapper.updateShader] Error updating shader:', error);
-        
+
         // エラーメッセージを解析してフォーマット
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         const parsedError = parseShaderError(errorMessage);
         const formattedError = formatShaderError(parsedError);
-        
-        return { 
-            success: false, 
-            error: formattedError
+
+        return {
+            success: false,
+            error: formattedError,
         };
     }
 }
