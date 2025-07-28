@@ -376,6 +376,9 @@ vec2 attackbass(float note, float t) {
     float amp = smoothstep(0.1, 0.0, abs(t - dr - 0.1) - dr) * exp(t * 0.2);
     float f = noteToFreq(note);
     float sqr = 0.1;
+   
+    // no attenuation 
+    amp = 1.;
 
     float base = f;
     float flt = exp(t * -1.5) * 30.0;
@@ -406,9 +409,13 @@ vec2 leadsub(float note, float t) {
     float amp = smoothstep(0.2, 0.0, abs(t - dr - 0.1) - dr) * exp(t * 0.2);
     float f = noteToFreq(note);
     float sqr = 0.03;
+   
+    // no attenuation 
+    amp = 1.;
 
     float base = f;
     float flt = exp(t * -3.5) * 20.0;
+    
     for (int i = 0; i < NSPC; i++) {
         float h = float(i + 1);
         float inten = 2.0 / h;
@@ -434,6 +441,9 @@ vec2 leadsub2(float note, float t) {
     float amp = smoothstep(0.2, 0.0, abs(t - dr - 0.1) - dr) * exp(t * 0.2);
     float f = noteToFreq(note);
     float sqr = 0.05;
+
+    // no attenuation 
+    amp = 1.;
 
     float base = f;
     float flt = exp(t * -2.5) * 20.0;
@@ -463,6 +473,9 @@ vec2 synth(float note, float t) {
     float amp = smoothstep(0.1, 0.0, abs(t - dr - 0.1) - dr) * exp(t * 0.2);
     float f = noteToFreq(note);
     float sqr = 0.1;
+    
+    // no attenuation
+    amp = 1.;
 
     float base = f;
     float flt = exp(t * -1.5) * 30.0;
@@ -886,17 +899,7 @@ vec2 pianoMelodySeq8(float rawBeat, float time) {
     return res;
 }
 
-
-// vec2 arpMelodySeq1(float rawBeat, float time) {
-//     int[10] notes = int[10](
-//         O(24), Db4(2), Eb4(2), Db4(2), Eb4(2)
-//     );
-//  
-//     SEQ(rawBeat, time, T16, 32., notes, 5, arp);
-// 
-//     return res;
-// }
-vec2 arpMelodySeq1(float rawBeat, float time) {
+vec2 epianoMelodyUra1(float rawBeat, float time) {
     int[10] notes = int[10](
         O(24), Db4(2), Eb4(2), Db4(2), Eb4(2)
     );
@@ -1019,23 +1022,25 @@ float breaker(float t) {
 }
 
 // // TODO: smoothin,smoothout
-// vec2 bowan1(float time) {
-//     vec2 freq = vec2(500., 560);
-//     float tempo = 1.;
-//     return (sin(time * freq) * sin(time * 2400.) + sin(time * freq * 2.4)) * exp(-fract(time/ tempo) * 5.) * .05;
-// }
+vec2 bowan1(float time) {
+    vec2 freq = vec2(500., 560);
+    float tempo = 1.;
+    return (sin(time * freq) * sin(time * 2400.) + sin(time * freq * 2.4)) * exp(-fract(time/ tempo) * 5.) * .05;
+}
 
 vec2 bowan2(float time) {
-    vec2 freq = vec2(140., 160);
-    float tempo = .25;
+    vec2 freq = vec2(300., 360);
+    freq = vec2(noteToFreq(56.), noteToFreq(59.));
+    float tempo = 1.;
     float t = fract(time / tempo);
     float s = attr(t);
     float att = exp(-t * 1.);
-    return
-        (
-            sin(t * freq) * sin(t * 20.)
-            + sin(t * freq * 1.4)
-        ) * att * s;
+    return (sin(t * freq) * sin(t * 2400.) + sin(t * freq * 2.4)) * exp(-t * 5.);
+    // return
+    //     (
+    //         sin(t * freq) * sin(t * 20.)
+    //         + sin(t * freq * 1.4)
+    //     ) * att * s;
 }
 
 vec2 boom(float time) {
@@ -1061,16 +1066,14 @@ vec2 mainSound(float time) {
     // sound += pianoMelodySeq3(tb, time);
     // sound += epianoHarmonySeq2(tb, time) * 2.;
     
-    sound += arpMelodySeq1(tb, time) * .5;
+    sound += epianoMelodyUra1(tb, time) * 1.;
     sound += arpMelodySeq2(tb, time) * .05;
     // sound += leadsubMelodySeq1(tb, time) * .1;
     
     float riser = noiseRiser(time, 0., 8., 1.) * .05;
-    
-    sound += bowan2(measure) * .25;
  
     if(isInMeasure(measure, 0., 8.)) {
-        sound += epianoHarmonySeq1(tb, time) * 2.;
+        sound += epianoHarmonySeq1(tb, time);
         sound += pianoMelodySeq1(tb, time);
         
     } else if(isInMeasure(measure, 8., 16.)) {
@@ -1103,7 +1106,7 @@ vec2 mainSound(float time) {
         sound += epianoHarmonySeq4(tb, time) * 2.;
         sound += pianoMelodySeq5(tb, time);
         
-    } else if(isInMeasure(measure, 57., 64.)) {
+    } else if(isInMeasure(measure, 56., 64.)) {
         sound += snareFillSeq(tb, time) * .05;
         sound += epianoHarmonySeq5(tb, time) * 2.;
         sound += pianoMelodySeq6(tb, time);
@@ -1125,7 +1128,11 @@ vec2 mainSound(float time) {
     }
 
     // sound = vec2(saw(0., 100. * time + (.2 * sine(5., time))));
+    // sound = attackbass(60., time);
     // sound = leadsub(60., time);
+    // sound = leadsub2(60., time);
+    
+    // sound += bowan2(measure) * .1;
 
     return sound;
 }
@@ -1145,5 +1152,17 @@ void main() {
     c.y = 1.;
     // end
     
-    vSound = mainSound(time) * c;
+    vec2 sound = vec2(0.);
+    
+    sound = mainSound(time) * c;
+   
+    // for reverb 
+    // for(int i = 0; i < 32; i++) {
+    //     float fi = float(i);
+    //     float playback = .045;
+    //     float attr = exp(fi * -1.25);
+    //     sound += mainSound(time - playback * fi) * attr;
+    // }
+    
+    vSound = sound;
 }
