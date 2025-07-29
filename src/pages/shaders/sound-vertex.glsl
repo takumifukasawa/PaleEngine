@@ -34,14 +34,29 @@ out vec2 vSound;
 
 #define S(a) 1, a
 
+#define Ab2N 44
+#define Ab2F 44.
+#define Ab1F 32.
+
 // base
+#define B0(a) 23, a
+#define Eb1(a) 27, a
+#define E1(a) 28, a
+#define F1(a) 29, a
+#define Gb1(a) 30, a
+#define G1(a) 31, a
+#define Ab1(a) 32, a
+#define A1(a) 33, a
+#define Bb1(a) 34, a
 #define B1(a) 35, a
+#define C2(a) 36, a
+#define Db2(a) 37, a
 #define Eb2(a) 39, a
 #define E2(a) 40, a
 #define F2(a) 41, a
 #define Gb2(a) 42, a
 #define G2(a) 43, a
-#define Ab2(a) 44, a
+#define Ab2(a) Ab2N, a
 #define A2(a) 45, a
 #define Bb2(a) 46, a
 #define B2(a) 47, a
@@ -242,6 +257,124 @@ float rhy(float time, float fade) {
 
 vec2 delay(float time, float dt) {
     return exp(-2. * dt) * sin(6.4831 * 440. * time) * vec2(rhy(time - dt * .3, dt), rhy(time - dt * .5, dt));
+}
+
+// マルチタップディレイリバーブ
+vec2 reverb(vec2 input, float time, float roomSize, float damping, float wetLevel) {
+    vec2 wet = vec2(0.0);
+    
+    // 早期反射 (Early Reflections)
+    float earlyDelays[8] = float[8](
+        0.011, 0.019, 0.023, 0.031,
+        0.037, 0.043, 0.047, 0.053
+    );
+    
+    for(int i = 0; i < 8; i++) {
+        float delayTime = earlyDelays[i] * roomSize;
+        float attenuation = exp(-float(i) * 0.2) * 0.25;
+        
+        // ステレオスプレッド用の位相シフト
+        float phaseL = time - delayTime;
+        float phaseR = time - (delayTime * 1.1);
+        
+        wet.x += input.x * attenuation * sin(phaseL * 100.0) * exp(-phaseL * damping);
+        wet.y += input.y * attenuation * sin(phaseR * 100.0) * exp(-phaseR * damping);
+    }
+    
+    // 後期反射 (Late Reflections) - より長い遅延
+    float lateDelays[6] = float[6](
+        0.067, 0.089, 0.113, 0.137, 0.167, 0.193
+    );
+    
+    for(int i = 0; i < 6; i++) {
+        float delayTime = lateDelays[i] * roomSize * 2.0;
+        float attenuation = exp(-float(i + 8) * 0.25) * 0.2;
+        
+        // フィードバック付きコムフィルター効果
+        float phaseL = time - delayTime;
+        float phaseR = time - (delayTime * 0.9);
+        
+        float filterL = sin(phaseL * 50.0) * exp(-phaseL * damping * 2.0);
+        float filterR = sin(phaseR * 55.0) * exp(-phaseR * damping * 2.0);
+        
+        wet.x += input.x * attenuation * filterL;
+        wet.y += input.y * attenuation * filterR;
+    }
+    
+    // 拡散用オールパスフィルター効果
+    float diffusionTime = 0.031 * roomSize;
+    float diffusionL = sin((time - diffusionTime) * 80.0) * exp(-(time - diffusionTime) * damping);
+    float diffusionR = sin((time - diffusionTime * 1.2) * 85.0) * exp(-(time - diffusionTime * 1.2) * damping);
+    
+    wet.x += input.y * 0.2 * diffusionL; // クロスフィード
+    wet.y += input.x * 0.2 * diffusionR;
+    
+    // ダンピング処理（高域減衰）
+    wet *= (1.0 - damping * 0.5);
+    
+    // ドライ/ウェットミックス
+    return mix(input, input + wet, wetLevel);
+}
+
+// サワサワ感のための高品質ノイズテクスチャ
+float smoothNoise(float x) {
+    float f0 = floor(x);
+    float f1 = f0 + 1.0;
+    float t = x - f0;
+    t = t * t * (3.0 - 2.0 * t); // smoothstep
+    
+    float v0 = fract(sin(f0 * 12.9898 + 78.233) * 43758.5453);
+    float v1 = fract(sin(f1 * 12.9898 + 78.233) * 43758.5453);
+    
+    return mix(v0, v1, t) * 2.0 - 1.0;
+}
+
+// 複数オクターブのノイズ（フラクタルノイズ）
+float fractalNoise(float x, int octaves) {
+    float value = 0.0;
+    float amplitude = 1.0;
+    float frequency = 1.0;
+    float maxValue = 0.0;
+    
+    for(int i = 0; i < octaves; i++) {
+        value += smoothNoise(x * frequency) * amplitude;
+        maxValue += amplitude;
+        amplitude *= 0.5;
+        frequency *= 2.0;
+    }
+    
+    return value / maxValue;
+}
+
+// ざわめきエフェクト
+vec2 rustleEffect(vec2 input, float time, float intensity, float speed) {
+    vec2 rustle = vec2(0.0);
+    
+    // 複数の周波数でざわめきを作成
+    float baseFreq = speed * 0.5;
+    
+    // 低域ざわめき（遠くの人の話し声的な）
+    float lowRustle = fractalNoise(time * baseFreq * 0.3, 4) * 0.6;
+    
+    // 中域ざわめき（紙のざわめき的な）
+    float midRustle = fractalNoise(time * baseFreq * 1.2, 6) * 0.8;
+    
+    // 高域ざわめき（細かいノイズ）
+    float highRustle = fractalNoise(time * baseFreq * 3.5, 8) * 0.5;
+    
+    // ステレオフィールドでのざわめき
+    float leftPhase = time * baseFreq + 0.3;
+    float rightPhase = time * baseFreq * 1.1 + 0.7;
+    
+    rustle.x = (lowRustle + midRustle + highRustle) * fractalNoise(leftPhase, 3);
+    rustle.y = (lowRustle + midRustle + highRustle) * fractalNoise(rightPhase, 3);
+    
+    // ざわめきの動的な変化（波のような強弱）
+    float wave = sin(time * speed * 0.1) * 0.5 + 0.5;
+    rustle *= wave * intensity;
+    
+    // 元の音に微細なざわめきを追加
+    return input + rustle * 0.35;
 }
 
 float saw(float note, float phase) {
@@ -723,6 +856,60 @@ float beatToMeasure(float beat) {
 #define Ab3_m7(a) N4(57,59,63,66), a
 
 // measure: 0-24
+vec2 epianoHarmonySeq01(float rawBeat, float time) {
+    int[8] notes = int[8](
+        Ab2_m7(8), Fm2_7(8), Eb2_m7(8), Eb2_m7_Eb3(8)
+    );
+    SEQ(rawBeat, time, T4, 32., notes, 4, epiano);
+
+    return res;
+}
+
+// measure: 0-24
+vec2 bassHarmonySeq01Low(float rawBeat, float time) {
+    int[8] notes = int[8](
+        Ab1(8), B1(8), Db2(8), F1(8)
+    );
+    SEQ(rawBeat, time, T4, 32., notes, 4, leadsub);
+
+    return res;
+}
+
+// measure: 0-24
+vec2 bassHarmonySeq01High(float rawBeat, float time) {
+    int[8] notes = int[8](
+        Ab3(8), B3(8), Db4(8), F3(8)
+    );
+    SEQ(rawBeat, time, T4, 32., notes, 4, leadsub);
+
+    return res;
+}
+
+// measure: 0-24
+vec2 subbassHarmonySeq01High(float rawBeat, float time) {
+    int[8] notes = int[8](
+        Ab3(8), B3(8), Db4(8), F4(8)
+    );
+    SEQ(rawBeat, time, T4, 32., notes, 4, leadsub);
+
+    return res;
+}
+
+vec2 riffSeq01(float rawBeat, float time) {
+    int[64] notes = int[64](
+        O(3), Bb3(1), O(3), Bb3(1), O(3), Bb3(1), O(3), Bb3(1),
+        O(3), Eb4(1), O(3), Eb4(1), O(3), Db4(1), O(3), Db4(1),
+        O(3), Bb3(1), O(3), Bb3(1), O(3), Bb3(1), O(3), Bb3(1),
+        O(3), Bb3(1), O(3), Bb3(1), O(3), Ab3(1), O(3), Ab3(1)
+    );
+    SEQ(rawBeat, time, T8, 64., notes, 32, epiano);
+
+    return res;
+}
+
+// ---
+
+// measure: 0-24
 vec2 epianoHarmonySeq1(float rawBeat, float time) {
     int[8] notes = int[8](
         Ab2_m7(8), Fm2_7(8), Eb2_m7(8), Eb2_m7_Eb3(8)
@@ -1049,6 +1236,19 @@ vec2 boom(float time) {
     return (sin(time * freq) * sin(time * 100.) + sin(time * freq * tempo)) * .5;
 }
 
+float envelope(float x, float ik, float io, float ok, float oo) {
+    float a = exp(x / ik) - io;
+    float b = exp(x * -ok + oo) * (1. / ok);
+    return min(a, b);
+}
+
+float smoothInEnvelope(float t, float is, float io, float so) {
+    // return smoothstep(is, io, t) * max(.5, exp((t - is) * so));
+    float rt = clamp(0., 1., mix(is, io, (t - is) / (io - is)));
+    return mix(0., 1., rt) * max(.5, exp(t * so));
+}
+
+
 // ステレオ出力のためvec2
 vec2 mainSound(float time) {
     float beat = timeToBeat(time);
@@ -1061,16 +1261,17 @@ vec2 mainSound(float time) {
     
     float tb = timeToBeat(time);
 
-    // sound += bassLowSeq(tb, time);
-    // sound += pianoMelodySeq2(tb, time);
-    // sound += pianoMelodySeq3(tb, time);
-    // sound += epianoHarmonySeq2(tb, time) * 2.;
-    
     sound += epianoMelodyUra1(tb, time) * 1.;
     sound += arpMelodySeq2(tb, time) * .05;
-    // sound += leadsubMelodySeq1(tb, time) * .1;
+    // float riser = noiseRiser(time, 0., 8., 1.) * .05;
     
-    float riser = noiseRiser(time, 0., 8., 1.) * .05;
+    sound = snareFillSeq(tb, time) * .05;
+    sound += epianoHarmonySeq01(tb, time);
+    sound += bassHarmonySeq01Low(tb, time) * .05;
+    sound += bassHarmonySeq01High(tb, time) * .05;
+    sound += bassHarmonySeq01High(tb, time) * .05;
+    sound += riffSeq01(tb, time) * 1.5;
+    return sound;
  
     if(isInMeasure(measure, 0., 8.)) {
         sound += epianoHarmonySeq1(tb, time);
@@ -1134,6 +1335,23 @@ vec2 mainSound(float time) {
     
     // sound += bowan2(measure) * .1;
 
+    // リバーブエフェクトを適用
+    float roomSize = 0.4;  // 部屋の大きさ (0.1-1.0) - 小さめの空間
+    float damping = 0.5;   // 高域減衰 (0.0-1.0) - 自然な減衰
+    float wetLevel = 0.2;  // リバーブの強さ (0.0-1.0) - 控えめに
+    
+    sound = reverb(sound, time, roomSize, damping, wetLevel);
+
+    // ざわめきエフェクトを適用
+    float rustleIntensity = 0.3; // ざわめきの強さ (0.0-2.0) - 控えめに
+    float rustleSpeed = 1.5;     // ざわめきの速度 (0.5-5.0) - ゆっくりと
+    
+    sound = rustleEffect(sound, time, rustleIntensity, rustleSpeed);
+    
+    float env = smoothInEnvelope(time, .05, .5, -1.);
+
+    sound = bass(Ab2F, time) * env;
+
     return sound;
 }
 
@@ -1155,14 +1373,6 @@ void main() {
     vec2 sound = vec2(0.);
     
     sound = mainSound(time) * c;
-   
-    // for reverb 
-    // for(int i = 0; i < 32; i++) {
-    //     float fi = float(i);
-    //     float playback = .045;
-    //     float attr = exp(fi * -1.25);
-    //     sound += mainSound(time - playback * fi) * attr;
-    // }
     
     vSound = sound;
 }
