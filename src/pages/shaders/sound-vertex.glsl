@@ -283,7 +283,7 @@ float smoothInEnvelope(float t, float is, float io, float so) {
 }
 
 float sineWave(float t, float phase, float s) {
-  return sin(t * phase) * s + (1. - s);
+  return sin(t * phase * PI) * s + (1. - s);
 }
 
 // ----------------------------------------------------------------
@@ -1131,13 +1131,26 @@ vec2 riffSeq01(float rawBeat, float time) {
     int[64] notes = int[64](
         O(3), Bb3(3), O(1), Bb3(3), O(1), Bb3(3), O(1), Bb3(1),
         O(3), Eb4(3), O(1), Eb4(3), O(1), Db4(3), O(1), Db4(1),
-        O(3), Bb3(3), O(1), Bb3(3), O(1), Bb3(3), O(1), Bb3(1),
+        O(3), Ab3(3), O(1), Bb3(3), O(1), Bb3(3), O(1), Bb3(1),
         O(3), Bb3(3), O(1), Bb3(3), O(1), Ab3(3), O(1), Ab3(1)
     );
     SEQ(rawBeat, time, T8, 64., notes, 32, epiano);
 
     return res;
 }
+
+vec2 beatRiffSeq01(float rawBeat, float time) {
+    int[128] notes = int[128](
+        B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), Db4(1), Db4(1), 
+        Eb4(1), Eb4(1), Eb4(1), Eb4(1), Eb4(1), Eb4(1), Eb4(1), Eb4(1), Eb4(1), Eb4(1), Eb4(1), Eb4(1), Eb4(1), Eb4(1), Eb4(1), Eb4(1), 
+        F4(1), F4(1), F4(1), F4(1), F4(1), F4(1), F4(1), F4(1), F4(1), F4(1), F4(1), F4(1), F4(1), F4(1), Eb4(1), Eb4(1), 
+        Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1)
+    );
+    SEQ(rawBeat, time, T16, 64., notes, 64, epiano);
+
+    return res;
+}
+
 
 vec2 clapSeq01(float rawBeat, float time) {
     int[8] notes = int[8](
@@ -1166,7 +1179,7 @@ vec2 hihat2Seq01(float rawBeat, float time) {
     return res;
 }
 
-vec2 kikSeq01(float rawBeat, float time) {
+vec2 kickSeq01(float rawBeat, float time) {
     int[4] notes = int[4](
         O(1), S(1)
     );
@@ -1511,6 +1524,8 @@ float envelope(float x, float ik, float io, float ok, float oo) {
     return min(a, b);
 }
 
+// TODO: spread
+
 // ステレオ出力のためvec2
 vec2 mainSound(float time) {
     float beat = timeToBeat(time);
@@ -1540,7 +1555,7 @@ vec2 mainSound(float time) {
     // - instability: 振幅不安定性（0.0-1.0、アナログVCAの特性）
     float tremolo = analogLFO(time, 3.2, 1, 0.03, 0.02) * 0.5 + 0.5; // 音量変調（0-1範囲）
     
-    vec2 kickSound = kikSeq01(tb, time) * .025;
+    vec2 kickSound = kickSeq01(tb, time) * .03;
   
     sound += vec2(0.); 
     sound += kickSound;
@@ -1560,17 +1575,26 @@ vec2 mainSound(float time) {
                 midbassHarmonySeq01High(tb, time) * .05 +
                 subbassHarmonySeq01High(tb, time) * .05,
                 kickSound, .8, time
-            ) * sineWave(tb, 5., .5),
+            ) * sineWave(tb, 1.5, .5),
             2000.
         );
-    
+   
     sound += 
         sidechainCompress(
-            riffSeq01(tb, time) * 1. * sineWave(tb, 4., .3),
+            riffSeq01(tb, time) * 1.5 * sineWave(tb, 3., .35),
             kickSound, .8, time
+        );
+       
+    // TODO: wave effect 
+    sound += 
+        highPassFilter(
+            beatRiffSeq01(tb, time) * .35,
+            2000.
         );
             
     sound += clapSeq01(tb, time) * .1;
+    
+    // TODO: sonar
     
     sound += snareFillSeq(tb, time) * .05;
     sound += hihat1Seq01(tb, time) * .15;
