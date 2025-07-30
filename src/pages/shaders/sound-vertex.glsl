@@ -1,6 +1,12 @@
+// https://www.shadertoy.com/view/flcyRH
+
 #version 300 es
 
 precision highp float;
+
+#include <common>
+#include <rand>
+#include <perlin>
 
 uniform float uBlockOffset;
 uniform float uSampleRate;
@@ -10,13 +16,19 @@ out vec2 vSound;
 // --- custom begin
 
 #define BPM 124.
+// #define SAMPLE_RATE 44100.
 
 // --- custom end
 
-#define PI 3.1415
+// #define PI 3.1415
 #define TAU 6.2831
 
 #define SA(a) clamp(a, 0., 1.)
+
+// #define saturate(x) clamp( x, 0.0, 1.0 )
+#define linearstep(a,b,t) saturate( ( ( t ) - ( a ) ) / ( ( b ) - ( a ) ) )
+#define smootherstep(t) ( t * t * t * ( t * ( t * 6.0 - 15.0 ) + 10.0 ) )
+
 
 #define T1 1.
 #define T2 2.
@@ -259,6 +271,23 @@ vec2 delay(float time, float dt) {
     return exp(-2. * dt) * sin(6.4831 * 440. * time) * vec2(rhy(time - dt * .3, dt), rhy(time - dt * .5, dt));
 }
 
+// ----------------------------------------------------------------
+// effects
+// ----------------------------------------------------------------
+
+float smoothInEnvelope(float t, float is, float io, float so) {
+    float rt = clamp(0., 1., mix(is, io, (t - is) / (io - is)));
+    // return mix(0., 1., rt) * max(.5, exp(t * so));
+    // return mix(0., 1., rt);
+    return smoothstep(is, io, t) * max(.5, exp(t * so));
+}
+
+float sineWave(float t, float phase, float s) {
+  return sin(t * phase) * s + (1. - s);
+}
+
+// ----------------------------------------------------------------
+
 // マルチタップディレイリバーブ
 vec2 reverb(vec2 input, float time, float roomSize, float damping, float wetLevel) {
     vec2 wet = vec2(0.0);
@@ -404,6 +433,130 @@ float lowPassFilter(float inp, float cut_lp, float res_lp) {
     n1 		= n1+cut_lp*(inp-n1+fb_lp*(n1-n2))+p4;
     n2		= n2+cut_lp*(n1-n2);
     return n2;
+}
+
+// high pass filter (低域カット)
+vec2 highPassFilter(vec2 input, float cutoffFreq) {
+    float sampleRate = 44100.;
+    float rc = 1.0 / (TAU * cutoffFreq);
+    float dt = 1.0 / sampleRate;
+    float alpha = rc / (rc + dt);
+    
+    // 簡易的なハイパスフィルター実装
+    // HPF = input - LPF(input) の原理を応用
+    vec2 lowPassed = input * (1.0 - alpha);
+    return input - lowPassed;
+}
+
+// ピンクノイズ（1/f特性）- アナログ感の基礎
+float pinkNoise(float x) {
+    // 複数オクターブのノイズを重ねて1/f特性を近似
+    float n = 0.0;
+    float amplitude = 1.0;
+    float frequency = 1.0;
+    
+    for(int i = 0; i < 6; i++) {
+        n += smoothNoise(x * frequency) * amplitude;
+        amplitude *= 0.5;  // 各オクターブで振幅半減
+        frequency *= 2.0;
+    }
+    
+    return n * 0.3; // 適度な範囲に正規化
+}
+
+// アナログ感のあるLFO
+float analogLFO(float time, float freq, int waveform, float drift, float instability) {
+    // 基本周波数にドリフトを追加（アナログの周波数不安定性）
+    float driftedFreq = freq * (1.0 + pinkNoise(time * 0.1) * drift);
+    
+    // 基本波形
+    float lfo = 0.0;
+    float phase = time * driftedFreq;
+    
+    if (waveform == 0) {
+        // アナログ正弦波 - 微細な歪みを追加
+        lfo = sin(TAU * phase);
+        lfo += sin(TAU * phase * 3.0) * 0.05; // 3次高調波歪み
+        lfo += pinkNoise(time * 10.0) * 0.03; // ノイズ混入
+    }
+    else if (waveform == 1) {
+        // アナログ三角波 - 丸みを帯びた
+        float t = fract(phase);
+        lfo = abs(t * 2.0 - 1.0) * 2.0 - 1.0;
+        lfo = sign(lfo) * pow(abs(lfo), 0.8); // 軽い丸み
+    }
+    else if (waveform == 2) {
+        // アナログのこぎり波 - 温かみのある
+        float t = fract(phase);
+        lfo = t * 2.0 - 1.0;
+        lfo += sin(TAU * phase * 2.0) * 0.1; // 2次高調波
+    }
+    else if (waveform == 3) {
+        // アナログ矩形波 - エッジが丸い
+        float t = fract(phase);
+        lfo = t < 0.5 ? -1.0 : 1.0;
+        lfo = tanh(lfo * 8.0); // エッジを丸く
+    }
+    
+    // 振幅の不安定性（アナログVCAの特性）
+    float ampModulation = 1.0 + pinkNoise(time * 0.3) * instability;
+    
+    // 温度変化シミュレーション（ゆっくりとした変動）
+    float temperatureDrift = sin(time * 0.02) * 0.02;
+    
+    return lfo * ampModulation * (1.0 + temperatureDrift);
+}
+
+// マルチLFO（複数のLFOを組み合わせ）
+float multiLFO(float time, float baseFreq, float complexity) {
+    float lfo1 = analogLFO(time, baseFreq, 0, 0.05, 0.03);           // メイン正弦波
+    float lfo2 = analogLFO(time, baseFreq * 1.3, 1, 0.03, 0.02);    // 三角波でモジュレーション
+    float lfo3 = analogLFO(time, baseFreq * 0.7, 2, 0.02, 0.01);    // のこぎり波で微細変調
+    
+    // 複雑さに応じてミックス
+    return lfo1 + lfo2 * complexity * 0.3 + lfo3 * complexity * 0.2;
+}
+
+// サイドチェイン用キックドラムのエンベロープ検出
+float kickEnvelope(vec2 kickSound, float attackTime, float releaseTime) {
+    // キックの音量を検出
+    float kickLevel = length(kickSound);
+    
+    // エンベロープフォロワー
+    // アタック（キックが鳴った瞬間に素早く反応）
+    float attack = 1.0 - smoothstep(0.0, attackTime, kickLevel);
+    
+    // リリース（キックが減衰するにつれてゆっくり戻る）
+    float release = 1.0 - exp(-releaseTime * kickLevel);
+    
+    return min(attack, release);
+}
+
+// ハウス風サイドチェインコンプレッサー
+vec2 sidechainCompress(vec2 input, vec2 kickTrigger, float intensity, float time) {
+    // キックの強度を検出
+    float kickStrength = length(kickTrigger);
+    
+    // BPMに同期したサイドチェインパターン（124 BPM = 4/4拍子）
+    float beat = timeToBeat(time);
+    float beatPhase = fract(beat * 0.5); // 8分音符でのフェーズ
+    
+    // キックタイミングでのサイドチェイン
+    float sidechainEnv = 1.0;
+    
+    if (kickStrength > 0.01) {
+        // キック発生時の圧縮カーブ
+        float compressTime = beatPhase * 2.0; // 0-2の範囲
+        
+        // ハウス特有の"パンピング"効果
+        float pumpCurve = exp(-compressTime * 8.0) * (1.0 - exp(-compressTime * 25.0));
+        
+        // サイドチェインの深さ
+        sidechainEnv = 1.0 - (pumpCurve * intensity * kickStrength * 5.0);
+        sidechainEnv = clamp(sidechainEnv, 0.1, 1.0); // 完全にミュートしない
+    }
+    
+    return input * sidechainEnv;
 }
 
 // --- base
@@ -729,6 +882,76 @@ vec2 guitar(int key, float time) {
     return vec2(guitar2(time, key)); 
 }
 
+// clap
+// ref: https://www.shadertoy.com/view/flcyRH
+
+vec2 cis( float t ) {
+    return vec2( cos( t ), sin( t ) );
+}
+
+// vec2 getDir( ivec2 p ) {
+//     return cis( TAU * texelFetch( iChannel0, p & 255, 0 ).x );
+// }
+// 
+// float perlin2d( vec2 p ) {
+//     vec2 cell = floor( p );
+//     vec2 cellCoord = p - cell;
+//     ivec2 cellIndex = ivec2( cell );
+// 
+//     vec2 cellCoordS = smootherstep( cellCoord );
+//     // vec2 cellCoordS = step( 0.5, cellCoord );
+//     
+//     return mix(
+//         mix(
+//             dot( getDir( cellIndex ), cellCoord ),
+//             dot( getDir( cellIndex + ivec2( 1, 0 ) ), cellCoord - vec2( 1.0, 0.0 ) ),
+//             cellCoordS.x
+//         ),
+//         mix(
+//             dot( getDir( cellIndex + ivec2( 0, 1 ) ), cellCoord - vec2( 0.0, 1.0 ) ),
+//             dot( getDir( cellIndex + ivec2( 1, 1 ) ), cellCoord - 1.0 ),
+//             cellCoordS.x
+//         ),
+//         cellCoordS.y
+//     );
+// }
+
+// float fbm2d( vec2 p ) {
+//     return (
+//         + perlin2d( 2.0 * p ) / 2.0
+//         + perlin2d( 4.0 * p ) / 4.0
+//         + perlin2d( 8.0 * p ) / 8.0
+//         + perlin2d( 16.0 * p ) / 16.0
+//     );
+// }
+
+float fbm2d(vec2 p, float s) {
+    return (
+        + perlinNoise(4. * s * p, 0.) / 2.
+        + perlinNoise(8. * s * p, 0.) / 4.
+        + perlinNoise(16. * s * p, 0.) / 8.
+        + perlinNoise(32. * s * p, 0.) / 16.
+    );
+}
+
+vec2 clap(float key, float t) {
+    // clap envelope
+    float env = mix(
+      exp( -30.0 * t ), // long decay
+      exp( -200.0 * mod( t, 0.01 ) ), // repeating transient
+      exp( -100.0 * max( 0., t - 0.02 ) ) // mixing them
+    );
+
+    vec2 uv = 2.5 * cis( TAU * 79.0 * t ) + 50.0 * t; // noise uv
+
+    return tanh( 10.0 * env * vec2(
+      fbm2d( uv , 1.),
+      fbm2d( uv + 0.2, 1. ) // slightly shifting the uv for the right channel to make it stereo
+    ) );
+}
+
+
+
 // ------------------------------------------------------------------------------------
 // SEQ_BEGIN
 // ------------------------------------------------------------------------------------
@@ -810,7 +1033,10 @@ vec2 guitar(int key, float time) {
 // #define SEQ(rawBeat,time,beatTempo,totalBeatCount,notes,noteCount,toneFunc)float tempoScale=beatTempo/4.;float fLocalBeatIndex=mod(rawBeat*tempoScale,float(totalBeatCount));int accRawBeatPrevLength=0;int accRawBeatLength=0;int targetNoteIndex=-1;for(int i=0;i<noteCount;i++){if(i==0){int rawNoteLength=notes[i*2+1];if(0.<fLocalBeatIndex&&fLocalBeatIndex<float(rawNoteLength)){targetNoteIndex=0;accRawBeatLength+=rawNoteLength;break;}accRawBeatLength+=rawNoteLength;}else{int rawNoteLength=notes[(i-1)*2+1];int nextRawNoteNumber=notes[i*2];int nextRawNoteLength=notes[i*2+1];if( float(accRawBeatLength)<fLocalBeatIndex&&fLocalBeatIndex<(float(accRawBeatLength)+float(nextRawNoteLength))){targetNoteIndex=i;accRawBeatPrevLength=accRawBeatLength;accRawBeatLength+=nextRawNoteLength;break;}accRawBeatPrevLength=accRawBeatLength;accRawBeatLength+=nextRawNoteLength;}}int currentNoteNumber=notes[targetNoteIndex*2];int currentNoteLength=notes[targetNoteIndex*2+1];int[4]noteNumbers=int[4]( (int(currentNoteNumber)&255),((int(currentNoteNumber)>>8)&255),((int(currentNoteNumber)>>16)&255),((int(currentNoteNumber)>>24)&255));if(targetNoteIndex==-1){return vec2(0.);}float fLocalBeatIndexInNote=fLocalBeatIndex-float(accRawBeatPrevLength);float localTime=BEAT_TO_TIME(mod(fLocalBeatIndexInNote,float(currentNoteLength))/tempoScale);float fallbackAmp=1.-smoothstep(.1,.2,fLocalBeatIndexInNote/float(currentNoteLength));fallbackAmp=1.;vec2 res=vec2(0.);float acc=0.;for(int i=0;i<4;i++){float fNoteNumber=float(noteNumbers[i]);float isNoteOn=(fNoteNumber>0.?1.:0.);res+=vec2(toneFunc(fNoteNumber,localTime))*isNoteOn*fallbackAmp;acc+=isNoteOn;}float gainAcc=1.5;res/=max(1.,acc-gainAcc);
 
 // さらに圧縮
-#define SEQ(rb,time,bt,tbc,ns,nc,tf)float ts=bt/4.;float flbi=mod(rb*ts,float(tbc));int arbpl=0;int arbl=0;int tni=-1;for(int i=0;i<nc;i++){if(i==0){int rnl=ns[i*2+1];if(0.<flbi&&flbi<float(rnl)){tni=0;arbl+=rnl;break;}arbl+=rnl;}else{int rnl=ns[(i-1)*2+1];int nrnn=ns[i*2];int nrnl=ns[i*2+1];if( float(arbl)<flbi&&flbi<(float(arbl)+float(nrnl))){tni=i;arbpl=arbl;arbl+=nrnl;break;}arbpl=arbl;arbl+=nrnl;}}int cnn=ns[tni*2];int cnl=ns[tni*2+1];int[4]nns=int[4]( (int(cnn)&255),((int(cnn)>>8)&255),((int(cnn)>>16)&255),((int(cnn)>>24)&255));if(tni==-1){return vec2(0.);}float flbiin=flbi-float(arbpl);float lt=BEAT_TO_TIME(mod(flbiin,float(cnl))/ts);float fa=1.-smoothstep(.1,.2,flbiin/float(cnl));fa=1.;vec2 res=vec2(0.);float acc=0.;for(int i=0;i<4;i++){float fnn=float(nns[i]);float ino=(fnn>0.?1.:0.);res+=vec2(tf(fnn,lt))*ino*fa;acc+=ino;}float ga=1.5;res/=max(1.,acc-ga);
+#define SEQ(rb,time,bt,tbc,ns,nc,tf)float ts=bt/4.;float flbi=mod(rb*ts,float(tbc));int arbpl=0;int arbl=0;int tni=-1;for(int i=0;i<nc;i++){if(i==0){int rnl=ns[i*2+1];if(0.<flbi&&flbi<float(rnl)){tni=0;arbl+=rnl;break;}arbl+=rnl;}else{int rnl=ns[(i-1)*2+1];int nrnn=ns[i*2];int nrnl=ns[i*2+1];if( float(arbl)<flbi&&flbi<(float(arbl)+float(nrnl))){tni=i;arbpl=arbl;arbl+=nrnl;break;}arbpl=arbl;arbl+=nrnl;}}int cnn=ns[tni*2];int cnl=ns[tni*2+1];int[4]nns=int[4]( (int(cnn)&255),((int(cnn)>>8)&255),((int(cnn)>>16)&255),((int(cnn)>>24)&255));if(tni==-1){return vec2(0.);}float flbiin=flbi-float(arbpl);float lt=BEAT_TO_TIME(mod(flbiin,float(cnl))/ts);float fa=1.-smoothstep(.1,.2,lt);fa=1.;vec2 res=vec2(0.);float acc=0.;for(int i=0;i<4;i++){float fnn=float(nns[i]);float ino=(fnn>0.?1.:0.);res+=vec2(tf(fnn,lt))*ino*fa;acc+=ino;}float ga=1.5;res/=max(1.,acc-ga);
+
+// 圧縮後の変数メモ
+// lt ... local time
 
 // ------------------------------------------------------------------------------------
 // SEQ_END
@@ -871,18 +1097,22 @@ vec2 bassHarmonySeq01Low(float rawBeat, float time) {
         Ab1(8), B1(8), Db2(8), F1(8)
     );
     SEQ(rawBeat, time, T4, 32., notes, 4, leadsub);
+    
+    float env = smoothInEnvelope(lt, .01, .25, .2);
 
     return res;
 }
 
 // measure: 0-24
-vec2 bassHarmonySeq01High(float rawBeat, float time) {
+vec2 midbassHarmonySeq01High(float rawBeat, float time) {
     int[8] notes = int[8](
         Ab3(8), B3(8), Db4(8), F3(8)
     );
     SEQ(rawBeat, time, T4, 32., notes, 4, leadsub);
+    
+    float env = smoothInEnvelope(lt, .01, .15, .2);
 
-    return res;
+    return res * env;
 }
 
 // measure: 0-24
@@ -891,18 +1121,56 @@ vec2 subbassHarmonySeq01High(float rawBeat, float time) {
         Ab3(8), B3(8), Db4(8), F4(8)
     );
     SEQ(rawBeat, time, T4, 32., notes, 4, leadsub);
+    
+    float env = smoothInEnvelope(lt, .01, .05, .2);
 
     return res;
 }
 
 vec2 riffSeq01(float rawBeat, float time) {
     int[64] notes = int[64](
-        O(3), Bb3(1), O(3), Bb3(1), O(3), Bb3(1), O(3), Bb3(1),
-        O(3), Eb4(1), O(3), Eb4(1), O(3), Db4(1), O(3), Db4(1),
-        O(3), Bb3(1), O(3), Bb3(1), O(3), Bb3(1), O(3), Bb3(1),
-        O(3), Bb3(1), O(3), Bb3(1), O(3), Ab3(1), O(3), Ab3(1)
+        O(3), Bb3(3), O(1), Bb3(3), O(1), Bb3(3), O(1), Bb3(1),
+        O(3), Eb4(3), O(1), Eb4(3), O(1), Db4(3), O(1), Db4(1),
+        O(3), Bb3(3), O(1), Bb3(3), O(1), Bb3(3), O(1), Bb3(1),
+        O(3), Bb3(3), O(1), Bb3(3), O(1), Ab3(3), O(1), Ab3(1)
     );
     SEQ(rawBeat, time, T8, 64., notes, 32, epiano);
+
+    return res;
+}
+
+vec2 clapSeq01(float rawBeat, float time) {
+    int[8] notes = int[8](
+        O(1), S(1), O(1), S(1)
+    );
+    SEQ(rawBeat, time, T4, 4., notes, 4, clap);
+
+    return res;
+}
+
+vec2 hihat1Seq01(float rawBeat, float time) {
+    int[4] notes = int[4](
+        O(1), S(1)
+    );
+    SEQ(rawBeat, time, T8, 2., notes, 2, hihat1);
+
+    return res;
+}
+
+vec2 hihat2Seq01(float rawBeat, float time) {
+    int[4] notes = int[4](
+        O(1), S(1)
+    );
+    SEQ(rawBeat, time, T8, 2., notes, 2, hihat2);
+
+    return res;
+}
+
+vec2 kikSeq01(float rawBeat, float time) {
+    int[4] notes = int[4](
+        O(1), S(1)
+    );
+    SEQ(rawBeat, time, T8, 2., notes, 2, kick);
 
     return res;
 }
@@ -1126,9 +1394,10 @@ float polyBlep(float t, float dt){
 // ------------------------------------------------------------
 //   Core waveforms  (phase は 0.0–1.0 wrap,  dt は 位相増分)
 // ------------------------------------------------------------
-float sineWave(float phase){
-    return sin(TAU * phase);
-}
+
+// float sineWave(float phase){
+//     return sin(TAU * phase);
+// }
 
 float sawWave(float phase){                 // alias-heavy / デモ用
     return fract(phase) * 2.0 - 1.0;
@@ -1242,13 +1511,6 @@ float envelope(float x, float ik, float io, float ok, float oo) {
     return min(a, b);
 }
 
-float smoothInEnvelope(float t, float is, float io, float so) {
-    // return smoothstep(is, io, t) * max(.5, exp((t - is) * so));
-    float rt = clamp(0., 1., mix(is, io, (t - is) / (io - is)));
-    return mix(0., 1., rt) * max(.5, exp(t * so));
-}
-
-
 // ステレオ出力のためvec2
 vec2 mainSound(float time) {
     float beat = timeToBeat(time);
@@ -1261,16 +1523,59 @@ vec2 mainSound(float time) {
     
     float tb = timeToBeat(time);
 
-    sound += epianoMelodyUra1(tb, time) * 1.;
-    sound += arpMelodySeq2(tb, time) * .05;
-    // float riser = noiseRiser(time, 0., 8., 1.) * .05;
+    // sound += epianoMelodyUra1(tb, time) * 1.;
+    // sound += arpMelodySeq2(tb, time) * .05;
+    // // float riser = noiseRiser(time, 0., 8., 1.) * .05;
     
-    sound = snareFillSeq(tb, time) * .05;
-    sound += epianoHarmonySeq01(tb, time);
-    sound += bassHarmonySeq01Low(tb, time) * .05;
-    sound += bassHarmonySeq01High(tb, time) * .05;
-    sound += bassHarmonySeq01High(tb, time) * .05;
-    sound += riffSeq01(tb, time) * 1.5;
+    // アナログLFOで音楽的変調を追加
+    // vibrato = analogLFO(時間, 周波数5.5Hz, 波形0=正弦波, ドリフト2%, 不安定性1%) * 振幅
+    float vibrato = analogLFO(time, 5.5, 0, 0.02, 0.01) * .02; // 微細なピッチ変調
+    
+    // tremolo = analogLFO(時間, 周波数3.2Hz, 波形1=三角波, ドリフト3%, 不安定性2%) * 0.5 + 0.5
+    // 引数説明: (time, freq, waveform, drift, instability)
+    // - time: 現在時刻
+    // - freq: LFO周波数（Hz）
+    // - waveform: 波形タイプ（0=正弦波, 1=三角波, 2=のこぎり波, 3=矩形波）
+    // - drift: 周波数ドリフト量（0.0-1.0、アナログの周波数不安定性）
+    // - instability: 振幅不安定性（0.0-1.0、アナログVCAの特性）
+    float tremolo = analogLFO(time, 3.2, 1, 0.03, 0.02) * 0.5 + 0.5; // 音量変調（0-1範囲）
+    
+    vec2 kickSound = kikSeq01(tb, time) * .025;
+  
+    sound += vec2(0.); 
+    sound += kickSound;
+    
+    sound += sidechainCompress(
+        epianoHarmonySeq01(tb, time),
+        kickSound, .8, time
+    );
+        
+    sound += sidechainCompress(
+        bassHarmonySeq01Low(tb, time) * .15 * tremolo,
+        kickSound, .8, time
+    );
+    sound += 
+        highPassFilter(
+            sidechainCompress(
+                midbassHarmonySeq01High(tb, time) * .05 +
+                subbassHarmonySeq01High(tb, time) * .05,
+                kickSound, .8, time
+            ) * sineWave(tb, 5., .5),
+            2000.
+        );
+    
+    sound += 
+        sidechainCompress(
+            riffSeq01(tb, time) * 1. * sineWave(tb, 4., .3),
+            kickSound, .8, time
+        );
+            
+    sound += clapSeq01(tb, time) * .1;
+    
+    sound += snareFillSeq(tb, time) * .05;
+    sound += hihat1Seq01(tb, time) * .15;
+    sound += hihat2Seq01(tb, time) * .1;
+    
     return sound;
  
     if(isInMeasure(measure, 0., 8.)) {
@@ -1335,18 +1640,29 @@ vec2 mainSound(float time) {
     
     // sound += bowan2(measure) * .1;
 
-    // リバーブエフェクトを適用
-    float roomSize = 0.4;  // 部屋の大きさ (0.1-1.0) - 小さめの空間
-    float damping = 0.5;   // 高域減衰 (0.0-1.0) - 自然な減衰
-    float wetLevel = 0.2;  // リバーブの強さ (0.0-1.0) - 控えめに
+    // アナログLFOでパラメータを変調
+    float lfo1 = multiLFO(time, 0.8, 0.3) * 0.5 + 0.5;  // 0-1範囲のLFO
+    float lfo2 = analogLFO(time, 1.2, 0, 0.08, 0.05) * 0.5 + 0.5;
+    float lfo3 = analogLFO(time, 0.3, 1, 0.06, 0.03);   // -1～1範囲
+    
+    // リバーブエフェクトを適用（LFOで変調）
+    float roomSize = 0.3 + lfo1 * 0.4;  // 0.3-0.7で変動
+    float damping = 0.4 + lfo2 * 0.3;   // 0.4-0.7で変動
+    float wetLevel = 0.15 + lfo1 * 0.15; // 0.15-0.3で変動
     
     sound = reverb(sound, time, roomSize, damping, wetLevel);
 
-    // ざわめきエフェクトを適用
-    float rustleIntensity = 0.3; // ざわめきの強さ (0.0-2.0) - 控えめに
-    float rustleSpeed = 1.5;     // ざわめきの速度 (0.5-5.0) - ゆっくりと
+    // ざわめきエフェクトを適用（LFOで変調）
+    float rustleIntensity = 0.2 + abs(lfo3) * 0.4; // 0.2-0.6で変動
+    float rustleSpeed = 1.0 + lfo2 * 2.0;          // 1.0-3.0で変動
     
     sound = rustleEffect(sound, time, rustleIntensity, rustleSpeed);
+    
+    // 最終段でのアナログ感（全体的な温かみと不安定性）
+    float analogWarmth = analogLFO(time, 0.1, 0, 0.01, 0.005) * 0.05 + 1.0; // 極ゆっくりな変調
+    float masterTremolo = analogLFO(time, 2.8, 2, 0.04, 0.02) * 0.03 + 1.0; // マスタートレモロ
+    
+    sound *= analogWarmth * masterTremolo;
     
     float env = smoothInEnvelope(time, .05, .5, -1.);
 

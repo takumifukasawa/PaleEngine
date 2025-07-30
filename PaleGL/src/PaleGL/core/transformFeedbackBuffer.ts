@@ -7,6 +7,7 @@ import { createTransformFeedback, TransformFeedback } from '@/PaleGL/core/transf
 import transformFeedbackFragmentShader from '@/PaleGL/shaders/transform-feedback-fragment.glsl';
 import { AttributeUsageType, GL_ARRAY_BUFFER } from '@/PaleGL/constants.ts';
 import { createUniforms, Uniforms, UniformsData } from '@/PaleGL/core/uniforms.ts';
+import { replaceShaderIncludes } from '@/PaleGL/core/buildShader.ts';
 
 // TODO: location, divisorをいい感じに指定したい
 
@@ -64,7 +65,7 @@ export function createTransformFeedbackBuffer(args: TransformFeedbackBufferArgs)
     const transformFeedbackVaryings = varyings.map(({ name }) => name);
     const shader = createShader({
         gpu,
-        vertexShader,
+        vertexShader: replaceShaderIncludes(vertexShader),
         fragmentShader: transformFeedbackFragmentShader,
         transformFeedbackVaryings,
     });
@@ -103,9 +104,9 @@ export function createTransformFeedbackBuffer(args: TransformFeedbackBufferArgs)
         gl.bindBuffer(GL_ARRAY_BUFFER, null);
         outputs.push({
             // name,
-            buffer: buffer!,
+            buffer,
         });
-        return buffer!;
+        return buffer;
     });
 
     const transformFeedback = createTransformFeedback({ gpu, buffers: outputBuffers });
