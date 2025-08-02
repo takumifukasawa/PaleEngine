@@ -1,4 +1,6 @@
+// ref:
 // https://www.shadertoy.com/view/flcyRH
+// https://github.com/0b5vr/wavenerd-dubplates/blob/main/shaders/20241117_planefiller.glsl
 
 #version 300 es
 
@@ -25,6 +27,9 @@ out vec2 vSound;
 
 #define SA(a) clamp(a, 0., 1.)
 
+#define tri(p) (1.-4.*abs(fract(p)-0.5))
+#define repeat(i, n) for (int i = ZERO; i < n; i++)
+
 // #define saturate(x) clamp( x, 0.0, 1.0 )
 #define linearstep(a,b,t) saturate( ( ( t ) - ( a ) ) / ( ( b ) - ( a ) ) )
 #define smootherstep(t) ( t * t * t * ( t * ( t * 6.0 - 15.0 ) + 10.0 ) )
@@ -46,9 +51,19 @@ out vec2 vSound;
 
 #define S(a) 1, a
 
+#define Ab1F 32.
 #define Ab2N 44
 #define Ab2F 44.
-#define Ab1F 32.
+#define Ab3N 56
+#define Ab3F 56.
+#define Eb3N 51
+#define Eb3F 51.
+#define B2N 47
+#define B2F 47.
+#define B3N 59
+#define B3F 59.
+#define Eb4N 63
+#define Eb4F 63.
 
 // base
 #define B0(a) 23, a
@@ -71,7 +86,7 @@ out vec2 vSound;
 #define Ab2(a) Ab2N, a
 #define A2(a) 45, a
 #define Bb2(a) 46, a
-#define B2(a) 47, a
+#define B2(a) B2N, a
 #define C3(a) 48, a
 #define Db3(a) 49, a
 #define D3(a) 50, a
@@ -80,14 +95,14 @@ out vec2 vSound;
 #define F3(a) 53, a
 #define Gb3(a) 54, a
 #define G3(a) 55, a
-#define Ab3(a) 56, a
+#define Ab3(a) Ab3N, a
 #define A3(a) 57, a
 #define Bb3(a) 58, a
-#define B3(a) 59, a
+#define B3(a) B3N, a
 #define C4(a) 60, a
 #define Db4(a) 61, a
 #define D4(a) 62, a
-#define Eb4(a) 63, a
+#define Eb4(a) Eb4N, a
 #define E4(a) 64, a
 #define F4(a) 65, a
 #define Gb4(a) 66, a
@@ -419,6 +434,7 @@ float triangle(float note, float phase) {
 }
 
 // low pass filter
+// 広域カット
 // ref: https://www.shadertoy.com/view/4sjSW1 
 float lowPassFilter(float inp, float cut_lp, float res_lp) {
     float n1 = 0.0;
@@ -1081,6 +1097,7 @@ float beatToMeasure(float beat) {
 // Ab3_m7: Ab3,B3,Eb4,Gb4
 #define Ab3_m7(a) N4(57,59,63,66), a
 
+
 // measure: 0-24
 vec2 epianoHarmonySeq01(float rawBeat, float time) {
     int[8] notes = int[8](
@@ -1134,7 +1151,8 @@ vec2 riffSeq01(float rawBeat, float time) {
         O(3), Ab3(3), O(1), Bb3(3), O(1), Bb3(3), O(1), Bb3(1),
         O(3), Bb3(3), O(1), Bb3(3), O(1), Ab3(3), O(1), Ab3(1)
     );
-    SEQ(rawBeat, time, T8, 64., notes, 32, epiano);
+    SEQ(rawBeat, time, T8, 64., notes, 32, leadsub2);
+    // SEQ(rawBeat, time, T8, 64., notes, 32, arp);
 
     return res;
 }
@@ -1188,7 +1206,70 @@ vec2 kickSeq01(float rawBeat, float time) {
     return res;
 }
 
-// ---
+vec2 epianoMelodySeq01(float rawBeat, float time) {
+    int[76] notes = int[76](
+        O(6), Ab3(2), Eb4(3), Db4(3), B3(6), 
+        O(2), Ab3(2), Eb4(3), Db4(3), B3(6),
+        O(2), Ab3(2), Eb4(3), Db4(3), B3(2),
+        Db4(4), Eb4(4), Db4(6), Db4(2),
+        O(6), Ab3(2), Eb4(3), Db4(3), B3(6), 
+        O(2), Ab3(2), Eb4(3), Db4(3), B3(6),
+        O(2), Ab3(2), Eb4(3), Db4(3), B3(2),
+        Ab3(4), Ab3(4), Gb3(6), Gb3(2)
+    );
+    SEQ(rawBeat, time, T16, 128., notes, 38, epiano);
+    
+    // int[40] notes = int[40](
+    //     O(6), Ab3(2), Eb4(3), Db4(3), B3(6), 
+    //     O(2), Ab3(2), Eb4(3), Db4(3), B3(6),
+    //     O(2), Ab3(2), Eb4(3), Db4(3), B3(6),
+    //     O(2), Ab3(2), Eb4(3), Db4(3), B3(2)
+    // );
+    // SEQ(rawBeat, time, T16, 64., notes, 20, leadsub);
+
+    return res;
+}
+
+
+// ii: attack in
+// io: attack out
+// ik: attack min vol
+// dk: decay power
+// km: sustain
+// oi: release in
+// oo: release out
+// ok: release max vol
+float sustainedFX(float ii, float io, float ik, float dk, float km, float oi, float oo, float ok, float t) {
+    return ((1. - ik) + smoothstep(ii, io, t) * ik) * max(exp(-dk * t + io), km) * (1. - smoothstep(oi, oo, t) * ok);
+}
+
+vec2 sustainedPadSeq01(float rawBeat, float time) {
+    float low = (cos(rawBeat * 1.) + 1.) * .15 + .75;
+    float res = .8 - (cos(time * 8.)) * .1;
+
+    vec2 s = (pad(Ab3F, time) + pad(B3F, time) + pad(Eb4F, time)) * .3;
+    s *= sustainedFX(0., .7, .2, .2, 2., 12., 16., .4, mod(rawBeat, 16.));
+    
+    float n = perlinNoise(vec2(rawBeat, 1.), 0.) * .05 + .9;
+    s *= lowPassFilter(n, low, res);
+    
+    return s;
+}
+
+
+// vec2 rimShotSeq01(float rawBeat, float time) {
+//     float env = exp2(-exp2(3.0 + 5.0 * 1.) * 1.) * smoothstep(0.0, 0.01, 1.);
+//     env = 1.;
+//     float wave = tanh(4.0 * ( // tanhで歪ませる
+//       + tri(rawBeat * 40.0 - 0.5 * env) // 三角波1個目 400Hz
+//       + tri(rawBeat * 150.0 - 0.5 * env) // 三角波2個目 1500Hz
+//     ));
+//     return vec2(wave);
+// }
+
+
+
+// --- tmp
 
 // measure: 0-24
 vec2 epianoHarmonySeq1(float rawBeat, float time) {
@@ -1581,7 +1662,7 @@ vec2 mainSound(float time) {
    
     sound += 
         sidechainCompress(
-            riffSeq01(tb, time) * 1.5 * sineWave(tb, 3., .35),
+            riffSeq01(tb, time) * .025 * sineWave(tb, 3., .35),
             kickSound, .8, time
         );
        
@@ -1599,8 +1680,23 @@ vec2 mainSound(float time) {
     sound += snareFillSeq(tb, time) * .05;
     sound += hihat1Seq01(tb, time) * .15;
     sound += hihat2Seq01(tb, time) * .1;
+   
+    // TODO: high pass 
     
+    // sound += lowPassFilter(sustainedPadSeq01(tb, time), 5000.) * .035;
+    sound += sustainedPadSeq01(tb, time) * .025;
+    
+    // sound = rimShotSeq01(tb, time) * 1.;
+    
+    // sound += epianoMelodySeq01(tb, time) * .035;
+    sound += epianoMelodySeq01(tb, time) * 1.5;
+   
+    // gain
+    sound *= 1.;
+  
     return sound;
+    
+    // ---
  
     if(isInMeasure(measure, 0., 8.)) {
         sound += epianoHarmonySeq1(tb, time);
