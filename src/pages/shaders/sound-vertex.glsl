@@ -19,6 +19,7 @@ out vec2 vSound;
 
 #define BPM 124.
 // #define SAMPLE_RATE 44100.
+#define SPB (60. / BPM) // seconds per beat
 
 // --- custom end
 
@@ -1517,6 +1518,18 @@ vec2 bassSeq(float measure, float rawBeat, float time) {
     return res;
 }
 
+vec2 iRiff(float measure, float rawBeat, float offset, float amp) {
+    SEQ_H;
+    float introClip = measureRange(measure, 0., 88.);
+    int[16] sustainedRiffNotes = int[16](
+        O(3), CH(B3N,2), O(2), CH(B3N,2), O(2), CH(B3N,2), O(2), CH(B3N,1)
+        // O(3), B3(2), O(2), B3(2), O(2), B3(2), O(2), B3(1)
+    );
+    SEQ(rawBeat + offset, time, T8, 16., sustainedRiffNotes, 8, epiano, 3. * introClip * amp);
+    return res;
+}
+
+
 vec2 riffSeq(float measure, float rawBeat, float time) {
     SEQ_H;
 
@@ -1526,17 +1539,26 @@ vec2 riffSeq(float measure, float rawBeat, float time) {
     // for(int i = 0; i < 4; i++) {
     //     // #3rd: B2,Eb3,F3,Ab2
     //     float fi = float(i);
-    //     float o = timeToBeat(fi * .2); // offset
+    //     float o = timeToBeat(fi * .5); // offset
     //     float ob = beatToMeasure(o); // offset in measure
-    //     float a = exp(-fi); // decay
+    //     float a = SA(exp(-fi)); // decay
     //     a = 4. - fi;
+    //     a = 1.;
     //     introClip = measureRange(measure, 0. + o, 88. + o);
     //     int[16] sustainedRiffNotes = int[16](
     //         O(3), CH(B3N,2), O(2), CH(B3N,2), O(2), CH(B3N,2), O(2), CH(B3N,1)
     //         // O(3), B3(2), O(2), B3(2), O(2), B3(2), O(2), B3(1)
     //     );
-    //     // SEQ(rawBeat + ob, time, T8, 16., sustainedRiffNotes, 8, epiano, 3. * a * introClip);
+    //     SEQ(rawBeat + ob, time, T8, 16., sustainedRiffNotes, 8, arp, 3. * a * introClip);
     // }
+    // for(int i = 0; i < 8; i++) {
+    //     float fi = float(i);
+    //     float o = timeToBeat(fi * .1); // offset
+    //     float a = 1. - SA(exp(fi * -.16));
+    //     res += iRiff(measure, rawBeat, o, a);
+    // }
+    // 
+    // return res;
     
     // --- riff simple
     introClip = max(
@@ -1818,12 +1840,24 @@ float envelope(float x, float ik, float io, float ok, float oo) {
     return min(a, b);
 }
 
-// TODO: spread
+// Impulse for convolution, this will be sampled NUM_SAMPLES times
+vec2 impulse(float time) {
+    time *= float(uSampleRate);
+    return hash3f(vec3(time * 452.3, time * 274.6, 0.)).xy * 2.0 - 1.0;
+}
+
+vec3 calcTime(float time, float scale, float offset) {
+    float t = time * scale + offset;
+    float tb = timeToBeat(t);
+    return vec3(
+        t, // time
+        tb, // beat
+        beatToMeasure(tb) // measure
+    );
+}
 
 // ステレオ出力のためvec2
 vec2 mainSound(float time) {
-    
-
     float beat = timeToBeat(time);
 
     vec2 sound = vec2(0.);
@@ -1908,14 +1942,37 @@ vec2 mainSound(float time) {
     
     // sound += epianoMelodySeq01(tb, time);
     // vec2 kickSound = kickSeq(tb, time) * .02 * measureRange(measure, 16., 88.);
+   
+    float sampleRate = float(uSampleRate);
+    vec2 reverb;
+    int reverbCount = 32;
+    float fReverbCount = float(reverbCount);
     
-    sound += drumSeq(measure, tb, time);
-    sound += riffSeq(measure, tb, time);
-    sound += bassSeq(measure, tb, time);
-    sound += synth16thSeq(measure, tb, time);
-    // sound += arpSeq(measure, tb, time);
-        
-    // gain 
+    // ref: https://www.shadertoy.com/view/csGBRD
+    for(int i = 0; i < reverbCount; i++) {
+        float timeOffset = float(i) / sampleRate;
+        bool variety = mod(time - timeOffset, SPB * 64.) > SPB * 32.;
+        float offsetScale = variety ? .5 : 1.2;
+        float timeScale = variety ? 2. : 1.;
+        timeOffset += hash3f(vec3(timeOffset * 126.7, 0., 0.)).x * offsetScale;
+        float lm = beatToMeasure(beat * timeScale - timeOffset) * impulse(timeOffset);
+        vec3 bassTime = calcTime(time, timeScale, timeOffset);
+        reverb += bassSeq(
+            bassTime.z,
+            bassTime.y,
+            bassTime.x
+        ) * impulse(timeOffset) * (8. / fReverbCount);
+        // sound += mainSound(time + timeScale - timeOffset) * impulse(timeOffset);
+    }
+    
+    vec2 drums = drumSeq(measure, tb, time);
+    vec2 riff = riffSeq(measure, tb, time);
+    // vec2 bass = bassSeq(measure, tb, time);
+    vec2 synth16th = synth16thSeq(measure, tb, time);
+    
+    sound = reverb + drums + riff + synth16th;
+   
+    // last gain 
     sound *=
         (sin(measureRate(measure, 86., 88.) * 100.) * .3 + 1.)
         * (1. - smoothstep(87.99, 88., measure));
@@ -1999,7 +2056,18 @@ void main() {
     // end
     
     vec2 sound = vec2(0.);
-   
+
+    // int reverb = 32;
+    // float sampleRate = float(uSampleRate);
+    // for(int i = 0; i < reverb; i++) {
+    //     float timeOffset = float(i) / sampleRate;
+    //     bool variety = mod(time - timeOffset, SPB * 64.) > SPB * 32.;
+    //     float offsetScale = variety ? .5 : 1.2;
+    //     float timeScale = variety ? 2. : 1.;
+    //     timeOffset += hash3f(vec3(timeOffset * 126.7, 0., 0.)).x * offsetScale;
+    //     sound += mainSound(time + timeScale - timeOffset) * impulse(timeOffset);
+    // }
+
     sound = mainSound(time) * c;
    
     vSound = sound;
