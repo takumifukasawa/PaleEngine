@@ -1,6 +1,7 @@
 // ref:
 // https://www.shadertoy.com/view/flcyRH
 // https://github.com/0b5vr/wavenerd-dubplates/blob/main/shaders/20241117_planefiller.glsl
+// https://www.shadertoy.com/view/csGBRD
 
 #version 300 es
 
@@ -20,6 +21,8 @@ out vec2 vSound;
 #define BPM 124.
 // #define SAMPLE_RATE 44100.
 #define SPB (60. / BPM) // seconds per beat
+
+#define DEV
 
 // --- custom end
 
@@ -1394,11 +1397,6 @@ vec2 drumSeq(float measure, float rawBeat, float time) {
         measureRange(measure, 56., 80.)
     );
     
-    float kickClip = max(
-        measureRange(measure, 16., 48.),
-        measureRange(measure, 64., 80.)
-    );
-
     // --- loop: clap 
     int[8] clapNotes = int[8](
         O(1), S(1), O(1), S(1)
@@ -1419,13 +1417,26 @@ vec2 drumSeq(float measure, float rawBeat, float time) {
         O(1), S(1)
     );
     SEQ(rawBeat, time, T8, 2., hihatNotes, 2, hihat1, .1 * hihatClip);
+ 
+  
+    return res;
+
+}
+
+vec2 kickSeq(float measure, float rawBeat, float time) {
+    SEQ_H;
    
     // --- kick 
+    
+    float kickClip = max(
+        measureRange(measure, 16., 48.),
+        measureRange(measure, 64., 80.)
+    );
+
     int[12] kickNotes = int[12](
         O(2), S(1), S(1), O(10), S(1), S(1)
     );
-    SEQ(rawBeat, time, T16, 16., kickNotes, 6, kickLow, .15 * kickClip);
-    
+    SEQ(rawBeat, time, T16, 16., kickNotes, 6, kickLow, .2 * kickClip);
     
     return res;
 }
@@ -1576,7 +1587,7 @@ vec2 riffSeq(float measure, float rawBeat, float time) {
         O(3), CH(B3N,2), O(2), CH(B3N,2), O(2), CH(B3N,2), O(2), CH(B3N,1),
         O(3), CH(B3N,2), O(2), CH(B3N,2), O(2), CH(B3N,2), O(2), CH(Bb3N,1)
     );
-    SEQ(rawBeat, time, T8, 32., sustainedRiffNotes, 16, epiano, 1.5 * introClip);
+    SEQ(rawBeat, time, T8, 32., sustainedRiffNotes, 16, epiano, 1.6 * introClip);
 
     // // --- 基本のRiff: echo test
     // for(int i = 0; i < 4; i++) {
@@ -1607,7 +1618,7 @@ vec2 riffSeq(float measure, float rawBeat, float time) {
         Ab3(1), Bb3(1), Eb4(1), Gb4(1),
         Ab4(1), Gb4(1), Eb4(1), Gb4(1)
     );
-    SEQ(rawBeat, time, T8, 16., breakNotes, 16, epiano, 1.2 * breakClip); 
+    SEQ(rawBeat, time, T8, 16., breakNotes, 16, epiano, 1.6 * breakClip); 
     
     // --- main riff
     
@@ -1620,7 +1631,7 @@ vec2 riffSeq(float measure, float rawBeat, float time) {
         O(3), Bb3(3), O(4), B3(3), O(6), B3(3), O(4), B3(3), O(3),
         O(3), B3(3), O(4), B3(3), O(6), Bb3(3), O(4), Bb3(3), O(3)
     );
-    SEQ(rawBeat, time, T16, 128., riffNotes, 36, epiano, 1.5 * mainClip);
+    SEQ(rawBeat, time, T16, 128., riffNotes, 36, epiano, 1.6 * mainClip);
     
     
     // float n = perlinNoise(vec2(rawBeat, 1.), 0.) * 1000.;
@@ -1640,7 +1651,7 @@ vec2 synth16thSeq(float measure, float rawBeat, float time) {
         B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), B3(1), Db4(1), Db4(1)
     );
     // SEQ(rawBeat, time, T16, 16., notes, 16, epiano, .65 * sustainedClip); 
-    SEQ(rawBeat, time, T16, 16., baseNotes, 16, leadsub, .02 * sustainedClip); 
+    SEQ(rawBeat, time, T16, 16., baseNotes, 16, leadsub, .04 * sustainedClip); 
      
     // --- melody 
     // #3rd: B2,Eb3,F3,Ab2
@@ -1651,7 +1662,7 @@ vec2 synth16thSeq(float measure, float rawBeat, float time) {
         Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1), Ab3(1)
     );
     // SEQ(rawBeat, time, T16, 64., notes, 64, epiano, .65 * melodyClip);
-    SEQ(rawBeat, time, T16, 64., melodyNotes, 64, leadsub, .02 * melodyClip); 
+    SEQ(rawBeat, time, T16, 64., melodyNotes, 64, leadsub, .04 * melodyClip); 
    
     float low = (cos(rawBeat * 5.) + 1.) * .15 + .85;
     float s = .8 - (cos(time * 8.)) * .1;
@@ -1944,11 +1955,13 @@ vec2 mainSound(float time) {
     // vec2 kickSound = kickSeq(tb, time) * .02 * measureRange(measure, 16., 88.);
    
     float sampleRate = float(uSampleRate);
-    vec2 reverb;
-    int reverbCount = 32;
+    vec2 reverb, riffs;
+    int reverbCount = 128;
     float fReverbCount = float(reverbCount);
-    
-    // ref: https://www.shadertoy.com/view/csGBRD
+
+#ifdef DEV
+    reverb = vec2(0.);
+#else
     for(int i = 0; i < reverbCount; i++) {
         float timeOffset = float(i) / sampleRate;
         bool variety = mod(time - timeOffset, SPB * 64.) > SPB * 32.;
@@ -1961,16 +1974,42 @@ vec2 mainSound(float time) {
             bassTime.z,
             bassTime.y,
             bassTime.x
-        ) * impulse(timeOffset) * (8. / fReverbCount);
-        // sound += mainSound(time + timeScale - timeOffset) * impulse(timeOffset);
+        ) * impulse(timeOffset) * (24. / fReverbCount);
     }
+#endif
+
+#ifdef DEV
+    riffs = vec2(0.);
+#else
+    // for(int i = 0; i < reverbCount; i++) {
+    //     float timeOffset = float(i) / sampleRate;
+    //     bool variety = mod(time - timeOffset, SPB * 64.) > SPB * 32.;
+    //     float offsetScale = variety ? .5 : 1.2;
+    //     float timeScale = variety ? 2. : 1.;
+    //     timeOffset += hash3f(vec3(timeOffset * 126.7, 0., 0.)).x * offsetScale;
+    //     float lm = beatToMeasure(beat * timeScale - timeOffset) * impulse(timeOffset);
+    //     vec3 bassTime = calcTime(time, timeScale, timeOffset);
+    //     riffs += riffSeq(
+    //         bassTime.z,
+    //         bassTime.y,
+    //         bassTime.x
+    //     ) * impulse(timeOffset) * (24. / fReverbCount);
+    // }
+#endif
     
     vec2 drums = drumSeq(measure, tb, time);
-    vec2 riff = riffSeq(measure, tb, time);
-    // vec2 bass = bassSeq(measure, tb, time);
+    vec2 kicks = kickSeq(measure, tb, time);
+    vec2 riffSingle = riffSeq(measure, tb, time);
+    vec2 bassSingle = bassSeq(measure, tb, time);
     vec2 synth16th = synth16thSeq(measure, tb, time);
+    float sidechain = 0.2 + min(1.0, mod(time, SPB) * 6.0) * 0.8;
     
-    sound = reverb + drums + riff + synth16th;
+    vec2 dry = (bassSingle + riffSingle + synth16th) * sidechain + drums + kicks;
+    vec2 wet = (reverb + riffs) * sidechain;
+
+    // sound = bass + reverb + kicks + drums + riffs + synth16th;
+    
+    sound = mix(dry, wet, .5) * 1.1;
    
     // last gain 
     sound *=
