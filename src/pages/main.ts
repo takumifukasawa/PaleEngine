@@ -440,7 +440,7 @@ controlsElement.appendChild(measureSeekBar);
 const timeDisplay = document.createElement('div');
 timeDisplay.setAttribute('id', 'time-display');
 timeDisplay.textContent = `0.0s / ${SOUND_DURATION.toFixed(1)}s`;
-timeDisplay.style.display = 'none'; // 初期状態では非表示
+// 初期状態でも表示（両方表示するため）
 controlsElement.appendChild(timeDisplay);
 
 // 小節表示
@@ -457,7 +457,7 @@ controlsElement.appendChild(textInputControlsElement);
 // 時間入力グループ
 const timeInputGroup = document.createElement('div');
 timeInputGroup.className = 'text-input-group';
-timeInputGroup.style.display = 'none'; // 初期状態では非表示
+timeInputGroup.style.display = 'none'; // 初期状態では非表示（入力フィールドは選択したモードのみ表示）
 
 const timeInputLabel = document.createElement('div');
 timeInputLabel.className = 'text-input-label';
@@ -858,17 +858,17 @@ const handleSeekModeChange = () => {
     currentSeekMode = selectedMode.value as 'time' | 'measure';
     
     if (currentSeekMode === 'time') {
-        // 時間ベースモード
+        // 時間ベースモード（時間と小節の両方を表示）
         seekBar.style.display = 'block';
         timeDisplay.style.display = 'block';
         measureSeekBar.style.display = 'none';
-        measureDisplay.style.display = 'none';
+        measureDisplay.style.display = 'block'; // 小節も表示
         timeInputGroup.style.display = 'block';
         measureInputGroup.style.display = 'none';
     } else {
-        // 小節ベースモード
+        // 小節ベースモード（時間と小節の両方を表示）
         seekBar.style.display = 'none';
-        timeDisplay.style.display = 'none';
+        timeDisplay.style.display = 'block'; // 時間も表示
         measureSeekBar.style.display = 'block';
         measureDisplay.style.display = 'block';
         timeInputGroup.style.display = 'none';
